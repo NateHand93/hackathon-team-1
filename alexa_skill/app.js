@@ -16,7 +16,7 @@ exports.handler = (event, context, callback) => {
     context.callbackWaitsForEmptyEventLoop = false;
     initializeDbConnectionThen(() => {
         var alexa = Alexa.handler(event, context, callback);
-        alexa.registerHandlers(newSessionHandlers, startModeHandlers, partialResponseHandlers);
+        alexa.registerHandlers(newSessionHandlers, startModeHandlers);
         alexa.execute();
     });
 }
