@@ -1,6 +1,8 @@
 var Alexa = require('alexa-sdk');
 var MongoClient = require('mongodb').MongoClient;
 
+var YelpClient = require('./yelp');
+
 let atlas_connection_uri;
 let cachedDb = null;
 
@@ -75,23 +77,58 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
         var amount = slots.amount.value;
         var category = slots.category.value;
         console.log(slots);
-        if (amount != null && category != null) {
-            var budget = {
-                amount,
-                category
-            }
-            saveBudget(budget, () => {
-                this.emit(':ask', `
-                    Your budget for ${category} has been set to 
-                    ${amount} dollars. What else can I do for you?
-                `, 'Try setting your budget');
-            });
-        } else if (amount != null && category == null) {
-            //this probably isn't the correct way to handle partial responses
-            this.emit('SetBudgetAmountOnly', amount);
-        } else if (amount == null && category != null) {
-            this.emit('SetBudgetCategoryOnly', category);
+
+        var budget = {
+            amount,
+            category
         }
+        saveBudget(budget, (found) => {
+            var verb = found ? 'updated' : 'set';
+
+            this.emit(':ask', `
+                Your monthly budget for ${category} has been ${verb} to 
+                ${amount} dollars. What else can I do for you?
+            `, 'Try setting your budget');
+        });
+    },
+
+    'ModifyBudget': function() {
+        var slots = this.event.request.intent.slots;
+        var amount = slots.amount.value;
+        var category = slots.category.value;
+        console.log(slots);
+
+        var budget = {
+            amount,
+            category
+        }
+        saveBudget(budget, (found) => {
+            var verb = found ? 'updated' : 'set';
+
+            this.emit(':ask', `
+                Your monthly budget for ${category} has been ${verb} to 
+                ${amount} dollars. What else can I do for you?
+            `, 'Try setting your budget');
+        });
+
+    },
+
+    'DeleteBudget': function() {
+        var slots = this.event.request.intent.slots;
+        var category = slots.category.value;
+        console.log(slots);
+
+        deleteBudget(category, (found) => {
+            if (!found) {
+                this.emit(':ask', 
+                    `Sorry, looks like you haven't set a monthly budget for ${category} yet`,
+                    `Try setting your budget for ${category}`);
+            } else {
+                this.emit(':ask',
+                    `Your monthly budget for ${category} has been deleted`,
+                    'Try setting your budget for a different category!');
+            }
+        });
     },
 
     'SessionEndedRequest': function() {
@@ -106,28 +143,32 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
 
 });
 
-var partialResponseHandlers = {
-
-    'SetBudgetAmountOnly': function(amount) {
-
-    },
-
-    'SetBudgetCategoryOnly': function(category) {
-
-    }
-
-}
-
 var saveBudget = (budget, callback) => {
     var budgetCollection = cachedDb.collection("budget");
     budgetCollection.findOne({category: budget.category}, (err, doc) => {
+        var found = false;
         if (doc) {
             budget["_id"] = doc["_id"];
+            found = true;
         }
         budgetCollection.save(budget, () => {
             console.log('Budget was saved: ' + budget);
-            return callback();
+            return callback(found);
         });
     });
     
+}
+
+var deleteBudget = (category, callback) => {
+    var budgetCollection = cachedDb.collection('budget');
+    budgetCollection.remove({category: category}, {w: 1}, function(err, res) {
+        var found = true;
+        if (err) {
+            console.log(err);
+        }
+        if (res < 1) {
+            found = false;
+        }
+        return callback(found);
+    });
 }

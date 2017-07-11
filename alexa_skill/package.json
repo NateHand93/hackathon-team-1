@@ -10,6 +10,8 @@
   "license": "ISC",
   "dependencies": {
     "alexa-sdk": "^1.0.10",
-    "mongodb": "^2.2.29"
+    "lodash": "^4.17.4",
+    "mongodb": "^2.2.29",
+    "yelp-fusion": "^1.0.3"
   }
 }
