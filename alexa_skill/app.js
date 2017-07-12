@@ -210,7 +210,6 @@ var deleteBudget = (category, callback) => {
         return callback(found);
     });
 }
-<<<<<<< HEAD
 
 var getBudget = (category, callback) => {
     var budgetCollection = cachedDb.collection('budget');
@@ -218,5 +217,3 @@ var getBudget = (category, callback) => {
         return callback(doc);
     });
 }
-=======
->>>>>>> 0523741f7207c8b2984b772cace7260e9b466a0f
