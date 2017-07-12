@@ -1,7 +1,9 @@
 var Alexa = require('alexa-sdk');
 var MongoClient = require('mongodb').MongoClient;
+var bigdecimal = require('bigdecimal');
 
 var YelpClient = require('./yelp');
+var SpendingUtils = require('./spending-utils');
 
 let atlas_connection_uri;
 let cachedDb = null;
@@ -131,6 +133,42 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
         });
     },
 
+    'BudgetSummary': function() {
+        var slots = this.event.request.intent.slots;
+        var category = slots.category.value;
+        getBudget(category, (budget) => {
+            if (!budget) {
+                this.emit(':ask',
+                    `Sorry! No budget was found for ${category}.`,
+                    'Please tell me what I can do for you or say "help"');
+                return;
+            }
+
+            let budgetAmount = new bigdecimal.BigDecimal(budget.amount);
+            SpendingUtils.getSpendingAmount(category, (spendingAmount) => {
+
+                let remaining = budgetAmount.subtract(spendingAmount);
+                let message;
+                let followUp;
+                if (remaining.doubleValue() == 0) {
+                    message = `You're broke! You have no money left to spend for ${category}`;
+                    followUp = `Try increasing your budget for ${category}`;
+                } else if (remaining.doubleValue() < 0) {
+                    let overspend = remaining.setScale(2, bigdecimal.RoundingMode.HALF_UP()).abs();
+                    message = `Oh no! You've overspent your budget for ${category} by $${overspend}`;
+                    followUp = `Try increasing your budget for ${category}`;
+                } else {
+                    message = `You have set your budget to ${budgetAmount} dollars for ${category}. 
+                    Your remaining balance for this month is $${remaining.toPlainString()}.`;
+                    followUp = 'Let me know what else I can do for you';
+                }
+                this.emit(':ask', message, followUp);
+
+            });
+
+        })
+    },
+
     'SessionEndedRequest': function() {
         console.log('Session ended!')
         this.emit(':tell', 'Goodbye');
@@ -170,5 +208,12 @@ var deleteBudget = (category, callback) => {
             found = false;
         }
         return callback(found);
+    });
+}
+
+var getBudget = (category, callback) => {
+    var budgetCollection = cachedDb.collection('budget');
+    budgetCollection.findOne({category: category}, (err, doc) => {
+        return callback(doc);
     });
 }
