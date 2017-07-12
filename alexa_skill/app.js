@@ -18,7 +18,7 @@ exports.handler = (event, context, callback) => {
     context.callbackWaitsForEmptyEventLoop = false;
     initializeDbConnectionThen(() => {
         var alexa = Alexa.handler(event, context, callback);
-        alexa.registerHandlers(newSessionHandlers, startModeHandlers, partialResponseHandlers);
+        alexa.registerHandlers(newSessionHandlers, startModeHandlers);
         alexa.execute();
     });
 }
@@ -210,6 +210,7 @@ var deleteBudget = (category, callback) => {
         return callback(found);
     });
 }
+<<<<<<< HEAD
 
 var getBudget = (category, callback) => {
     var budgetCollection = cachedDb.collection('budget');
@@ -217,3 +218,5 @@ var getBudget = (category, callback) => {
         return callback(doc);
     });
 }
+=======
+>>>>>>> 0523741f7207c8b2984b772cace7260e9b466a0f
