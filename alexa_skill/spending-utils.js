@@ -44,4 +44,26 @@ let getDateRange = () => {
     }
 }
 
+SpendingUtils.getFavouritePlace = (category, callback) => {
+    let queryArgs = getTwoMonthsRange();
+    queryArgs.category = category
+    console.log('queryArgs : ',queryArgs);
+    restClient.get(spendingUrl, {parameters: queryArgs}, (data, res) => {
+        
+        callback(err,"starbucks");
+    });
+}
+
+
+let getTwoMonthsRange = () => {
+    let now = new Date();
+    let from = new Date(now.getFullYear(), now.getMonth()-2, 1);
+    let to = new Date(now.getFullYear(), now.getMonth() , 0);
+    console.info('getDateRange');
+    return {
+        from: from.toLocaleDateString('en-us'), 
+        to: to.toLocaleDateString('en-us')
+    }
+}
+
 module.exports = SpendingUtils;

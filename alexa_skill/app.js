@@ -11,21 +11,56 @@ let cachedDb = null;
 const states = {
     STARTMODE: '_STARTMODE',
     SETBUDGETMODE: '_SETBUDGETMODE',
-    GETBUDGETMODE: '_GETBUDGETMODE'
+    GETBUDGETMODE: '_GETBUDGETMODE',
+	SEARCHMODE: '_SEARCHMODE',
+    SURPRISEMODE:'_SURPRISEMODE'
 }
+
+var languageStrings = {
+    'en-US': {
+        'translation': {
+           'WELCOME_MESSAGE':"Welcome to the MASS, good to hear from you. Please tell me what can I do for you or say help.",
+           'SEARCH_MESSAGE':"Say  restaurant name and budget",
+           'SURPRISE_ME': "Okay, Are you ready for the surprise list. You can say yes to surprise list, or say no to quit.?",
+           'HELP_MESSAGE': "MASS is an agent who can help you with your personal finances is also a scout for you to provide guidance in spending money. Now you can say: MASS set-up the budget or find restaurant. Now please tell me how I can help you. "
+        }
+   }
+};
+
+const returnDefaultEvent = (event) => Object.assign(
+  {
+     "requiredParams": {
+        "term": "food",
+        "location": "mclean"
+        
+    },
+    "additionalParams" :{
+    "rating" :"5",
+    "distance":"100",
+    "budgetAmount":"30",
+    "peopleCount":"1"
+  }
+    },
+  
+  event
+);
+
 
 exports.handler = (event, context, callback) => {
     context.callbackWaitsForEmptyEventLoop = false;
     initializeDbConnectionThen(() => {
-        var alexa = Alexa.handler(event, context, callback);
-        alexa.registerHandlers(newSessionHandlers, startModeHandlers);
+        var alexa = Alexa.handler(returnDefaultEvent(event), context, callback);
+		alexa.resources = languageStrings;
+        alexa.registerHandlers(newSessionHandlers, startModeHandlers, searchModeHandlers, surpriseModeHandlers);
         alexa.execute();
     });
 }
 
 const initializeDbConnectionThen = (callback) => {
-    var uri = process.env['MONGODB_ATLAS_CLUSTER_URI'];
-    if (atlas_connection_uri == null) {
+    //var uri = "mongodb://hackathon_team1:Hexaware123!%40#@fintech1-shard-00-00-jaiox.mongodb.net:27017,fintech1-shard-00-01-jaiox.mongodb.net:27017,fintech1-shard-00-02-jaiox.mongodb.net:27017/hackathon?ssl=true&replicaSet=FinTech1-shard-0&authSource=admin"
+	
+	var uri = process.env['MONGODB_ATLAS_CLUSTER_URI'];
+	if (atlas_connection_uri == null) {
         atlas_connection_uri = uri;
     }
     try {
@@ -43,6 +78,8 @@ const initializeDbConnectionThen = (callback) => {
         console.log(err);
     }
 }
+
+// *****************************  Handler function ************************************ 
 
 var newSessionHandlers = {
 
@@ -177,9 +214,145 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
     'Unhandled': function() {
         console.log("UNHANDLED");
         this.emit(':ask', 'Sorry, I didn\'t get that. Try again.', 'Try setting your budget!');
+    },
+	
+	"FindTheRestaurantIntent": function() {
+        this.handler.state = states.SEARCHMODE;
+        this.emit(':ask', this.t("SEARCH_MESSAGE" ));
+
+    },
+    "SurpriseMeIntent": function() {
+        this.handler.state = states.SURPRISEMODE;
+        this.emit(':ask', this.t("SURPRISE_ME"));
+    },
+  
+    "AMAZON.HelpIntent": function() {
+        this.emit(':ask', this.t("HELP_MESSAGE" ));
+    },
+
+});
+
+var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
+
+      'NewSession': function() {
+        this.emit('NewSession');
+    },
+
+    'FindTheRestaurantIntent': function (){
+       var additional_params={
+        budgetAmount:event.additionalParams.budgetAmount,
+        distance:event.additionalParams.distance,//this.event.request.intent.slots.distance,
+        rating:event.additionalParams.rating,//this.event.request.intent.slots.rating,
+        price:event.additionalParams.price//this.event.request.intent.slots.price
+        };
+        var required_params = {
+            
+            term: event.requiredParams.term,//this.event.request.intent.slots.term,
+            location:event.requiredParams.location
+        };
+        console.log('SearchIntent');
+       let allRestaurants= YelpClient.getAllRestaurants(required_params,additional_params);
+        if(allRestaurants.length==0 || additional_params==null){
+            this.state =states.SURPRISEMODE;
+            this.emitWithState('surpriseIntent');  
+        }
+        else{
+            this.emit(':tell',"I found the places for you" );
+            for (var i = 0; i < allRestaurants.length; i++) {
+               var priceRange= YelpClient.getPriceRange(allRestaurants[i].price);
+              let  message =`Wonderful. How about ${allRestaurants[i].name}  located at ${allRestaurants[i].location}.
+                 Their rating is ${allRestaurants[i].rating} stars. 
+                 Price range for one person would be ${priceRange}. 
+                 Does this work for you? Or say Repeat.`
+               this.emit(':tell',message);
+             }
+            
+            this.emit(':tell','Done with search. Please say stop to quit');
+        };
+    },
+    'AMAZON.CancelIntent': function() {
+        this.handler.state = '';
+        this.emit('NewSession');
+    },
+    'AMAZON.StopIntent': function () {
+        this.emit(':tell', 'Goodbye' );
+
+    },
+
+    'AMAZON.HelpIntent': function () {  
+       this.emit(':ask', 'please say the category to seach the place to go' );
+
+    },
+    
+    'SessionEndedRequest': function() {
+        console.log('Session ended!')
+        this.emit(':tell', 'Goodbye');
+    },
+
+    'Unhandled': function() {
+        console.log("UNHANDLED");
+        this.emit(':ask', 'Sorry, I did not understand. Please tell me what can I do for you or say help.');
     }
 
 });
+var surpriseModeHandlers = Alexa.CreateStateHandler(states.SURPRISEMODE, {
+
+      'NewSession': function() {
+        this.emit('NewSession');
+    },
+
+    'SurpriseIntent': function (){
+
+        var required_params = {
+            term: event.requiredParams.term,//this.event.request.intent.slots.term,
+            location:event.requiredParams.location
+        };
+       var surprisePlace = SpendingUtils.getFavouritePlace();
+       required_params.term=surprisePlace;
+       var additionalParams;
+     
+       let allRestaurants= YelpClient.getAllRestaurants(required_params,additionalParams);
+       var priceRange= YelpClient.getPriceRange(allRestaurants[0].price);
+         let  message =`Wonderful. How about ${allRestaurants[0].name}  located at ${allRestaurants[0].location}.
+                 Their rating is ${allRestaurants[0].rating} stars. 
+                 Price range for one person would be ${priceRange}. 
+                 Does this work for you? Or say Repeat.`
+         this.emit(':tell',message);    
+         
+    },
+    'AMAZON.YesIntent': function() {  // Yes, I want to start the practice
+        this.state =states.SURPRISEMODE;
+        this.emitWithState('surpriseIntent');  
+      },
+     'AMAZON.NoIntent': function() {
+        this.emit(':tell', 'Okay, Please seach with proper term, goodbye!');
+    },
+
+    'AMAZON.CancelIntent': function() {
+        this.handler.state = '';
+        this.emit('NewSession');
+    },
+    'AMAZON.StopIntent': function () {
+        this.emit(':tell', 'Goodbye' );
+    },
+
+    'AMAZON.HelpIntent': function () {  
+       this.emit(':ask', "HELP_MESSAGE");
+    },
+    
+    'SessionEndedRequest': function() {
+        console.log('Session ended!')
+        this.emit(':tell', 'Goodbye');
+    },
+
+    'Unhandled': function() {
+        console.log("UNHANDLED");
+        this.emit(':ask', 'Sorry, I did not understand. Please tell me what can I do for you or say help.', 'Seach again!');
+    }
+
+});
+
+// *********************  Helper function *******************************************
 
 var saveBudget = (budget, callback) => {
     var budgetCollection = cachedDb.collection("budget");
@@ -217,3 +390,4 @@ var getBudget = (category, callback) => {
         return callback(doc);
     });
 }
+

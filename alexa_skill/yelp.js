@@ -1,24 +1,14 @@
 'use strict';
 
-var YelpClient = {};
 var yelp = require('yelp-fusion');
 var _ = require('lodash');
+var yelpClient={};
 global.restaurentList = [];
-function getAllRestaurants(){
+function getAllRestaurants(requiredParams,additionalParams){
   var clientId = 'IOi-_0QBEv1UQx2vrr8TYg';
   var clientSecret = 'RW40zUADkLsO08M5qjAfZ3BnqM8hXEtRp3kcgVl6PPvs4dwoJoOfEEe9kolpDi9j';
 
-  var requiredParams = {
-    term:'food',
-    location: 'mclean, va'
-  };
-  var additionalParams ={
-    rating :5,
-    distance:null,
-    budgetAmount:30,
-    peopleCount:6
-  };
-
+ 
 yelp.accessToken(clientId, clientSecret).then(response => {
   var client = yelp.client(response.jsonBody.access_token);
   client.search(requiredParams).then(response => {
@@ -64,12 +54,13 @@ function buildParams(params){
  
   if(price){
     parameters.price = price;
-  }
+  };
    if(params.rating){
     parameters.rating=params.rating;
-  }
+  };
    if(params.distance){
-    parameters.distance=params.distance;
+     var distanceInMeters = new bigdecimal.BigDecimal(distance) ;
+     parameters.distance = getMiles(distanceInMeters);
   };
   return JSON.parse(JSON.stringify(parameters));
 }
@@ -88,7 +79,32 @@ function buildParams(params){
     return "$$$$";
   };
   return null;
+};
+
+function getPriceRange(symbol){
+  console.log('Inside getPrice.');
+  
+  if (symbol =="$"){
+    return "Under 10";
+  }else if (symbol =="$$" ){
+    return "between 11 to 30 ";
+  }
+  else if (symbol =="$$$"){
+    return "between 31 to 60";
+  }
+  else if (symbol =="$$$$"){
+    return "greater than 60";
+  };
+  return null;
+};
+function getMiles(i) {
+     return i*0.000621371192;
+};
+function getAvailableBalance(){
+
+  
 }
 
-YelpClient.getAllRestaurants = getAllRestaurants;
-module.exports = YelpClient;
+yelpClient.getAllRestaurants=getAllRestaurants;
+yelpClient.getPriceRange=getPriceRange;
+module.exports=yelpClient

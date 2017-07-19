@@ -33,7 +33,42 @@
           "samples": []
         }
       ]
-    }
+    },
+	
+	          { "name": "FindTheRestaurantIntent",
+
+                "samples": [
+                        "Find a restaurant for me",
+                        "find {term} restaturant",
+                        "find restaturant within {distance} miles",
+                        "find {rating} restaturant",
+                        "find me an {term} restaurant around {distance} miles with {rating} star ratings for {peopleCount} people."
+                       
+                      ],
+                 "slots": [
+                 { "name": "location",
+                  "type": "AMAZON.STRING"
+                   },
+                { "name": "term",
+                  "type": "AMAZON.STRING"
+                   },
+                { "name": "rating",
+                  "type": "AMAZON.NUMBER"
+                   },
+                { "name": "distance",
+                  "type": "AMAZON.NUMBER"
+                   },
+                { "name": "budgetAmount",
+                  "type": "AMAZON.NUMBER"
+                   },
+                   { "name": "peopleCount",
+                  "type": "AMAZON.NUMBER"
+                   }   
+
+                   ] }
+	
+	
+	
   ],
   "types": [
     {
