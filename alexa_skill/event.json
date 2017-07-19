@@ -1,0 +1,51 @@
+{
+  "session": {
+    "new": false,
+    "sessionId": "12345678",
+    "attributes": {
+        "STATE": "_STARTMODE"
+    },
+    "user": {
+      "userId": "hackathon-test"
+    },
+    "application": {
+      "applicationId": "hackathon-test"
+    }
+  },
+  "version": "1.0",
+  "request": {
+    "locale": "en-US",
+    "timestamp": "2016-10-27T21:06:28Z",
+    "type": "IntentRequest",
+    "requestId": "amzn1.echo-api.request.12345678",
+    "intent": {
+      "slots": {
+            "amount": {
+                "value": "100"
+            },
+            "category": {
+                "value": "restaurants"
+            }
+      },
+      "name": "SetUpBudget"
+    }
+  },
+  "context": {
+    "AudioPlayer": {
+      "playerActivity": "IDLE"
+    },
+    "System": {
+      "device": {
+        "supportedInterfaces": {
+          "AudioPlayer": {}
+        }
+      },
+      "application": {
+        "applicationId": "amzn1.ask.skill.[unique-value-here]"
+      },
+      "user": {
+        "userId": "amzn1.ask.account.[unique-value-here]"
+      }
+    }
+  }
+}
