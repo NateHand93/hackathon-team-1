@@ -6,7 +6,8 @@ var bigdecimal = require('bigdecimal');
 
 var yelpClient={};
 global.restaurentList = [];
-function getRestaurantsByrequiredParams(requiredParams){
+
+yelpClient.getRestaurantsByrequiredParams=(requiredParams)=>{
   var clientId = 'IOi-_0QBEv1UQx2vrr8TYg';
   var clientSecret = 'RW40zUADkLsO08M5qjAfZ3BnqM8hXEtRp3kcgVl6PPvs4dwoJoOfEEe9kolpDi9j';
 
@@ -27,16 +28,7 @@ yelp.accessToken(clientId, clientSecret).then(response => {
 });
 }
 
-function getRestaurantsByAdditionalParams(params,additionalParams){
-
-  var all = getRestaurantsByrequiredParams(params);
-  console.log(all);
-       var list = findByGivenParams(additionalParams,all);
-       console.log(list.length);
-      return list
-}
-
-function parseResponse(restaurants)
+let  parseResponse=(restaurants)=> {
 {
  for(var i = 0; i < restaurants.length;i++){
       var  restaurant ={'name':restaurants[i].name,'location':restaurants[i].location,'rating':restaurants[i].rating,'distance':restaurants[i].distance,'price':restaurants[i].price,};
@@ -46,8 +38,20 @@ function parseResponse(restaurants)
   console.log('list:',list.length);
   return list ;
 }
+}
 
-function findByGivenParams(params,restaurants){
+yelpClient.getRestaurantsByAdditionalParams=(params,additionalParams)=>{
+
+  var all = yelpClient.getRestaurantsByrequiredParams(params);
+  console.log(all);
+       var list = findByGivenParams(additionalParams,all);
+       console.log(list.length);
+      return list
+}
+
+
+
+let findByGivenParams=(params,restaurants)=>{
   var result = _.filter(restaurants,buildParams(params));
   console.log('result:',result.length);
 
@@ -56,7 +60,7 @@ function findByGivenParams(params,restaurants){
 }
 
  
-function buildParams(params){
+let buildParams = (params) => {
   var parameters = new Object();
   var price;
   if(params.price ==null){
@@ -77,7 +81,8 @@ function buildParams(params){
   console.log('parameters : ',parameters);
   return JSON.parse(JSON.stringify(parameters));
 }
-  function getPrice(budgetAmount,peopleCount){
+
+  let  getPrice=(budgetAmount,peopleCount)=>{
   console.log('Inside getPrice.');
   var averageCost = parseInt(budgetAmount/peopleCount);
   if (parseInt(averageCost) <=10){
@@ -92,9 +97,9 @@ function buildParams(params){
     return "$$$$";
   };
   return null;
-};
+}
 
-function getPriceRange(symbol){
+yelpClient.getPriceRange=(symbol)=>{
   console.log('Inside getPrice.');
   
   if (symbol =="$"){
@@ -109,17 +114,11 @@ function getPriceRange(symbol){
     return "greater than 60";
   };
   return null;
-};
-function getMeters(i) {
-  console.log('getMeters');
-     return i/0.000621371192;
-};
-function getAvailableBalance(){
-
-  
 }
 
-yelpClient.getRestaurantsByrequiredParams=getRestaurantsByrequiredParams;
-yelpClient.getRestaurantsByAdditionalParams=getRestaurantsByAdditionalParams;
-yelpClient.getPriceRange=getPriceRange;
+let getMeters=(i)=> {
+  console.log('getMeters');
+     return i/0.000621371192;
+}
+
 module.exports=yelpClient
