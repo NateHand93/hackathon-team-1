@@ -29,6 +29,16 @@ var languageStrings = {
 global.currentRestaurantInd=0;
 
 global.allRestaurants=[];
+/*{ name: 'Haandi Indian Cuisine',
+    location: '1222 W Broad St,,Falls Church,VA,22046',
+    rating: 4,
+    distance: 2.95772687392,
+    price: '$$' },
+  { name: 'Masala Indian Cuisine',
+    location: '1394 Chain Bridge Rd,null,McLean,VA,22101',
+    rating: 4,
+    distance: 2.567505765344,
+    price: '$$' }];*/
 
 exports.handler = (event, context, callback) => {
     context.callbackWaitsForEmptyEventLoop = false;
@@ -239,14 +249,14 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
 
         }else{
             let budgetAmount =parseInt(budget);
-            let spendingAmount = 20;// SpendingUtils.getSpendingAmount(category);
-            let remaining = parseInt(budgetAmount) -parseInt(spendingAmount);
+            let remaining=0;
+             SpendingUtils.getSpendingAmount(category, (spendingAmount) => {
+            console.log(spendingAmount);
+             remaining = parseInt(budgetAmount) -parseInt(spendingAmount);
             console.log('budgetAmount',budgetAmount);
             console.log('spendingAmount',spendingAmount);
+                });
             console.log('remaining ',remaining);
-            //test start
-              // people = null;
-            //test end
             
             if(remaining <= 0){
                 console.log('set up the budget',remaining);
@@ -367,11 +377,23 @@ var surpriseModeHandlers = Alexa.CreateStateHandler(states.SURPRISEMODE, {
 
     'SurpriseIntent': function (){
        console.log('SurpriseIntent--');
-       var required_params = { term: 'restaurants', location: 'Mclean,VA' };//SpendingUtils.getFavouritePlace();
+       let category = this.event.request.intent.slots.category.value;
+
+       SpendingUtils.getFavouritePlace(category, (favouritePlace) => {
+        let message ;
+        if(favouritePlace!=null){
+        var required_params = { term: favouritePlace, location: 'Mclean,VA' };//
         allRestaurants= YelpClient.getRestaurantsByrequiredParams(required_params,null);
-       console.log('allRestaurants:',allRestaurants);
-       let message = getResponseMessage(allRestaurants,currentRestaurantInd); 
-       this.emit(':tell',message);    
+        console.log('allRestaurants:',allRestaurants);
+        message = getResponseMessage(allRestaurants,currentRestaurantInd); 
+        }
+        else{
+            message=HELP_MESSAGE;
+        };
+        console.log(message);
+        this.emit(':tell',message);    
+       
+        });
          
     },
    'AMAZON.YesIntent': function() { 
