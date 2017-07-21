@@ -26,8 +26,9 @@ var languageStrings = {
         }
    }
 };
+global.currentRestaurantInd=0;
 
-
+global.allRestaurants=[];
 
 exports.handler = (event, context, callback) => {
     context.callbackWaitsForEmptyEventLoop = false;
@@ -265,20 +266,19 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
             }
             else
             {
-                message =``;
+                message ='Sorry, I could not find an option under your budget. Please tell me what can I do for you or say help.';
             };
 
         };
         console.log(message);
-
         this.emit(':tell',message);
 
 },
 
     'FindTheRestaurantIntent': function (){
-         var slots = this.event.request.intent.slots;
-        let  message;
-        console.log('category',slots.category.value);
+       var slots = this.event.request.intent.slots;
+       let  message;
+       console.log('category',slots.category.value);
        var additional_params={
         budgetAmount:slots.budget.value,
        // distance:slots.distance.value,
@@ -290,38 +290,55 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
             'location':slots.location.value
         };
         
-       var allRestaurants= YelpClient.getRestaurantsByrequiredParams(required_params);//,additional_params);
-       console.log('SearchIntent',allRestaurants);
-        if(allRestaurants='undefined' || additional_params==null){     
+        //allRestaurants= YelpClient.getRestaurantsByAdditionalParams(required_params,additional_params); //commented for tessting
+       
+        if(allRestaurants=='undefined' || additional_params==null){     
             console.log('No options');
             message=`Sorry, I could not find an option under your budget. Please tell me what can I do for you or say help.`;  
         }
         else{
-            
-            for (var i = 0; i < allRestaurants.length; i++) {
-               var priceRange= YelpClient.getPriceRange(allRestaurants[i].price);
-              message = `Wonderful. How about ${allRestaurants[i].name}  located at ${allRestaurants[i].location}.
-                 Their rating is ${allRestaurants[i].rating} stars. 
-                 Price range for one person would be ${priceRange}. 
-                 Does this work for you? Or say Repeat.`
-              console.log(message);
-             }
-            
+            console.log('SearchIntent',allRestaurants.length);
+            currentRestaurantInd=0;
+            message =getResponseMessage(allRestaurants,currentRestaurantInd); 
             
         };
+        console.log('restaurant: ',message); 
         this.emit(':tell',message);
 
     },
-    'AMAZON.YesIntent': function() {  // Yes, I want to start the practice
+    'AMAZON.YesIntent': function() { 
         this.handler.state = '';
+        allRestaurants=[];
+        currentRestaurantInd=null;
         this.emit(':tell',`Bingo. Thanks for using MASS. Good Bye.`);  
       },
+      'AMAZON.NoIntent': function() { 
+        console.log('No intent',allRestaurants);
+        currentRestaurantInd= currentRestaurantInd+1; 
+        let message = getResponseMessage(allRestaurants,currentRestaurantInd); 
+        this.emit(':tell',message);
+      },
+      'AMAZON.NextIntent': function() { 
+        currentRestaurantInd= currentRestaurantInd+1;  
+        let message =  getResponseMessage(allRestaurants,currentRestaurantInd); 
+        this.emit(':tell',message);  
+      },
+      'AMAZON.PreviousIntent': function() { 
+        currentRestaurantInd= currentRestaurantInd-1;  
+        let message =  getResponseMessage(allRestaurants,currentRestaurantInd); 
+        this.emit(':tell',message);  
+      },
+   
     'AMAZON.CancelIntent': function() {
         this.handler.state = '';
+         allRestaurants=[];
+        currentRestaurantInd=null;
         this.emit('NewSession');
     },
     'AMAZON.StopIntent': function () {
         this.handler.state = '';
+         allRestaurants=[];
+        currentRestaurantInd=null;
         this.emit(':tell', 'Goodbye' );
 
     },
@@ -351,25 +368,20 @@ var surpriseModeHandlers = Alexa.CreateStateHandler(states.SURPRISEMODE, {
     'SurpriseIntent': function (){
        console.log('SurpriseIntent--');
        var required_params = { term: 'restaurants', location: 'Mclean,VA' };//SpendingUtils.getFavouritePlace();
-       //console.log('SurpriseIntent',surprisePlace);
-      // required_params.term=surprisePlace;
-        
-       let allRestaurants= YelpClient.getRestaurantsByrequiredParams(required_params,null);
+        allRestaurants= YelpClient.getRestaurantsByrequiredParams(required_params,null);
        console.log('allRestaurants:',allRestaurants);
-       var priceRange= YelpClient.getPriceRange(allRestaurants[0].price);
-         let  message =`Wonderful. How about ${allRestaurants[0].name}  located at ${allRestaurants[0].location}.
-                 Their rating is ${allRestaurants[0].rating} stars. 
-                 Price range for one person would be ${priceRange}. 
-                 Does this work for you? Or say Repeat.`
-         this.emit(':tell',message);    
+       let message = getResponseMessage(allRestaurants,currentRestaurantInd); 
+       this.emit(':tell',message);    
          
     },
-    'AMAZON.YesIntent': function() {  // Yes, I want to start the practice
-       this.handler.state = '';
-        this.emit(':tell','Thanks for using MASS. Good Bye.');  
+   'AMAZON.YesIntent': function() { 
+        this.handler.state = '';
+        allRestaurants=[];
+        this.emit(':tell',`Bingo. Thanks for using MASS. Good Bye.`);  
       },
      'AMAZON.NoIntent': function() {
-        this.emit(':tell', 'Okay, Please seach with proper term, goodbye!');
+        this.handler.state = '';
+        this.emit(':tell', 'Okay, Please seach again, goodbye!');
     },
 
     'AMAZON.CancelIntent': function() {
@@ -433,5 +445,34 @@ var getBudget = (category, callback) => {
     budgetCollection.findOne({category: category}, (err, doc) => {
         return callback(doc);
     });
+}
+
+//----------------------Restaurant Function----------------------
+
+let getResponseMessage=(data,i)=>{
+   
+let  message =`okay. How about ${data[i].name}  located at ${data[i].location}.
+                 Their rating is ${data[i].rating} stars.
+                 Price range for one person would be ${getPriceRange(data[i].price)} dollars. 
+                 Does this work for you? Or say Repeat.`
+
+ console.log('getResponseMessage',message);
+  return message; 
+}
+
+let getPriceRange=(symbol)=>{
+  console.log('Inside getPrice.');
+  if (symbol =="$"){
+    return "Under 10";
+  }else if (symbol =="$$" ){
+    return "between 11 to 30 ";
+  }
+  else if (symbol =="$$$"){
+    return "between 31 to 60";
+  }
+  else if (symbol =="$$$$"){
+    return "greater than 60";
+  };
+  return null;
 }
 

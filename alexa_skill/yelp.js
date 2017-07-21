@@ -3,23 +3,20 @@
 var yelp = require('yelp-fusion');
 var _ = require('lodash');
 var bigdecimal = require('bigdecimal');
-
-var yelpClient={};
+var SpendingUtils = require('./spending-utils');
+const clientId = 'IOi-_0QBEv1UQx2vrr8TYg'; //process.env["SPENDING_CLIENT_ID"];
+const clientSecret = 'RW40zUADkLsO08M5qjAfZ3BnqM8hXEtRp3kcgVl6PPvs4dwoJoOfEEe9kolpDi9j';//process.env["SPENDING_CLIENT_SECRET"];
+const yelpClient={};
 global.restaurentList = [];
 
 yelpClient.getRestaurantsByrequiredParams=(requiredParams)=>{
-  var clientId = 'IOi-_0QBEv1UQx2vrr8TYg';
-  var clientSecret = 'RW40zUADkLsO08M5qjAfZ3BnqM8hXEtRp3kcgVl6PPvs4dwoJoOfEEe9kolpDi9j';
-
- console.log("requiredParams",requiredParams);
+ 
 yelp.accessToken(clientId, clientSecret).then(response => {
   var client = yelp.client(response.jsonBody.access_token);
    client.search(requiredParams).then(response => {
-    console.log(response.jsonBody);
     var b = response.jsonBody.businesses;
     var convertedJson = JSON.stringify(b);
     var obj = JSON.parse(convertedJson);
-   console.log(convertedJson);
     return parseResponse(obj);
   });
 }).catch(e => {
@@ -31,11 +28,11 @@ yelp.accessToken(clientId, clientSecret).then(response => {
 let  parseResponse=(restaurants)=> {
 {
  for(var i = 0; i < restaurants.length;i++){
-      var  restaurant ={'name':restaurants[i].name,'location':restaurants[i].location,'rating':restaurants[i].rating,'distance':restaurants[i].distance,'price':restaurants[i].price,};
+     var  restaurant ={'name':restaurants[i].name,'location':getAddress(restaurants[i].location),'rating':restaurants[i].rating,'distance':getMiles(restaurants[i].distance),'price':restaurants[i].price,};
       global.restaurentList.push(restaurant);      
   }
   var list = global.restaurentList?global.restaurentList:null; 
-  console.log('list:',list.length);
+  console.log('list:',list);
   return list ;
 }
 }
@@ -49,8 +46,6 @@ yelpClient.getRestaurantsByAdditionalParams=(params,additionalParams)=>{
       return list
 }
 
-
-
 let findByGivenParams=(params,restaurants)=>{
   var result = _.filter(restaurants,buildParams(params));
   console.log('result:',result.length);
@@ -58,12 +53,11 @@ let findByGivenParams=(params,restaurants)=>{
   var finalResult = result? result:null;  
   return finalResult;
 }
-
  
 let buildParams = (params) => {
   var parameters = new Object();
   var price;
-  if(params.price ==null){
+  if(params.price ==null && (params.budgetAmount != null && params.peopleCount !=null)){
    price = getPrice(params.budgetAmount,params.peopleCount);
     }else{ 
     price =params.price};
@@ -99,7 +93,8 @@ let buildParams = (params) => {
   return null;
 }
 
-yelpClient.getPriceRange=(symbol)=>{
+//yelpClient.
+let getPriceRange=(symbol)=>{
   console.log('Inside getPrice.');
   
   if (symbol =="$"){
@@ -119,6 +114,15 @@ yelpClient.getPriceRange=(symbol)=>{
 let getMeters=(i)=> {
   console.log('getMeters');
      return i/0.000621371192;
+}
+
+let getMiles=(i)=> {
+  console.log('getMiles');
+     return parseInt(i)*0.000621371192;
+}
+
+ let getAddress=(addressObject)=>{
+   return (addressObject.address1+','+addressObject.address2+','+addressObject.city+','+addressObject.state+','+ addressObject.zip_code);
 }
 
 module.exports=yelpClient
