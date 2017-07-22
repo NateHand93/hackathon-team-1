@@ -10,8 +10,6 @@ let cachedDb = null;
 
 const states = {
     STARTMODE: '_STARTMODE',
-    SETBUDGETMODE: '_SETBUDGETMODE',
-    GETBUDGETMODE: '_GETBUDGETMODE',
 	SEARCHMODE: '_SEARCHMODE',
     SURPRISEMODE:'_SURPRISEMODE'
 }
@@ -117,6 +115,10 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
         var category = slots.category.value;
         console.log(slots);
 
+        if (this.event.request.dialogState !== 'COMPLETED') {
+            this.emit(':delegate');
+            return;
+        }
         var budget = {
             amount,
             category
@@ -136,7 +138,10 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
         var amount = slots.amount.value;
         var category = slots.category.value;
         console.log(slots);
-
+        if (this.event.request.dialogState !== 'COMPLETED') {
+            this.emit(':delegate');
+            return;
+        }
         var budget = {
             amount,
             category
@@ -173,6 +178,11 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
     'BudgetSummary': function() {
         var slots = this.event.request.intent.slots;
         var category = slots.category.value;
+        if (this.event.request.dialogState !== 'COMPLETED') {
+            this.emit(':delegate');
+            return;
+        }
+
         getBudget(category, (budget) => {
             if (!budget) {
                 this.emit(':ask',
@@ -195,10 +205,12 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
                     message = `Oh no! You've overspent your budget for ${category} by $${overspend}`;
                     followUp = `Try increasing your budget for ${category}`;
                 } else {
-                    message = `You have set your budget to ${budgetAmount} dollars for ${category}. 
+                    message = `Your monthly budget is ${budgetAmount} dollars for ${category}. 
                     Your remaining balance for this month is $${remaining.toPlainString()}.`;
                     followUp = 'Let me know what else I can do for you';
                 }
+                console.log(`Message: ${message}`);
+                console.log(`Follow-up: ${followUp}`);
                 this.emit(':ask', message, followUp);
 
             });

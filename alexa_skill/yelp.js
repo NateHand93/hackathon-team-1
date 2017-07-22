@@ -2,6 +2,7 @@
 
 var yelp = require('yelp-fusion');
 var _ = require('lodash');
+var bigdecimal = require('bigdecimal');
 var yelpClient={};
 global.restaurentList = [];
 function getAllRestaurants(requiredParams,additionalParams){
