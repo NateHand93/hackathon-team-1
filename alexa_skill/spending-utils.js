@@ -2,7 +2,7 @@ var SpendingUtils = {};
 let bigdecimal = require('bigdecimal');
 let RestClient = require('node-rest-client').Client;
 let restClient = new RestClient();
-const spendingUrl = process.env["SPENDING_SERVICE_URL"];
+const spendingUrl ="https://snhbob7x29.execute-api.us-east-2.amazonaws.com/prod/getSpendingData" //process.env["SPENDING_SERVICE_URL"];
 
 //gets an array of spending data (including metadata) for the current calendar month for a given category
 //takes a category and a callback function as arguments
@@ -49,8 +49,8 @@ SpendingUtils.getFavouritePlace = (category, callback) => {
     queryArgs.category = category
     console.log('queryArgs : ',queryArgs);
     restClient.get(spendingUrl, {parameters: queryArgs}, (data, res) => {
-        
-        callback(err,"starbucks");
+        //get the data from table with lowest price of last two months visit
+        callback("starbucks");
     });
 }
 
@@ -59,7 +59,8 @@ let getTwoMonthsRange = () => {
     let now = new Date();
     let from = new Date(now.getFullYear(), now.getMonth()-2, 1);
     let to = new Date(now.getFullYear(), now.getMonth() , 0);
-    console.info('getDateRange');
+    console.info('from',from);
+    console.info('to',to);
     return {
         from: from.toLocaleDateString('en-us'), 
         to: to.toLocaleDateString('en-us')

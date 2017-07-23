@@ -24,30 +24,24 @@ var languageStrings = {
         }
    }
 };
+global.currentRestaurantInd=0;
 
-const returnDefaultEvent = (event) => Object.assign(
-  {
-     "requiredParams": {
-        "term": "food",
-        "location": "mclean"
-        
-    },
-    "additionalParams" :{
-    "rating" :"5",
-    "distance":"100",
-    "budgetAmount":"30",
-    "peopleCount":"1"
-  }
-    },
-  
-  event
-);
-
+global.allRestaurants=[];
+/*{ name: 'Haandi Indian Cuisine',
+    location: '1222 W Broad St,,Falls Church,VA,22046',
+    rating: 4,
+    distance: 2.95772687392,
+    price: '$$' },
+  { name: 'Masala Indian Cuisine',
+    location: '1394 Chain Bridge Rd,null,McLean,VA,22101',
+    rating: 4,
+    distance: 2.567505765344,
+    price: '$$' }];*/
 
 exports.handler = (event, context, callback) => {
     context.callbackWaitsForEmptyEventLoop = false;
     initializeDbConnectionThen(() => {
-        var alexa = Alexa.handler(returnDefaultEvent(event), context, callback);
+        var alexa = Alexa.handler(event, context, callback);
 		alexa.resources = languageStrings;
         alexa.registerHandlers(newSessionHandlers, startModeHandlers, searchModeHandlers, surpriseModeHandlers);
         alexa.execute();
@@ -55,9 +49,9 @@ exports.handler = (event, context, callback) => {
 }
 
 const initializeDbConnectionThen = (callback) => {
-    //var uri = "mongodb://hackathon_team1:Hexaware123!%40#@fintech1-shard-00-00-jaiox.mongodb.net:27017,fintech1-shard-00-01-jaiox.mongodb.net:27017,fintech1-shard-00-02-jaiox.mongodb.net:27017/hackathon?ssl=true&replicaSet=FinTech1-shard-0&authSource=admin"
+    var uri = "mongodb://hackathon_team1:Hexaware123!%40#@fintech1-shard-00-00-jaiox.mongodb.net:27017,fintech1-shard-00-01-jaiox.mongodb.net:27017,fintech1-shard-00-02-jaiox.mongodb.net:27017/hackathon?ssl=true&replicaSet=FinTech1-shard-0&authSource=admin"
 	
-	var uri = process.env['MONGODB_ATLAS_CLUSTER_URI'];
+	//var uri = process.env['MONGODB_ATLAS_CLUSTER_URI'];
 	if (atlas_connection_uri == null) {
         atlas_connection_uri = uri;
     }
@@ -229,6 +223,7 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
     },
 	
 	"FindTheRestaurantIntent": function() {
+        console.log('FindTheRestaurantIntent');
         this.handler.state = states.SEARCHMODE;
         this.emit(':ask', this.t("SEARCH_MESSAGE" ));
 
@@ -250,49 +245,128 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
         this.emit('NewSession');
     },
 
-    'FindTheRestaurantIntent': function (){
-       var additional_params={
-        budgetAmount:event.additionalParams.budgetAmount,
-        distance:event.additionalParams.distance,//this.event.request.intent.slots.distance,
-        rating:event.additionalParams.rating,//this.event.request.intent.slots.rating,
-        price:event.additionalParams.price//this.event.request.intent.slots.price
-        };
-        var required_params = {
+    'searchCriteriaIntent':function (){
+     var slots = this.event.request.intent.slots;
+     let category = slots.category.value;
+     let budget = slots.budget.value;
+     let people = slots.people.value;
+    // let distance =slots.distance.value;
+     let rating  =slots.rating.value;
+    // let price = slots.price.value;
+     let message
+        if(slots.budget.value ==null){
+             message =   `Let’s find a restaurant for you. Please tell me if you would prefer an option based on your 
+                defined budget or tell me how much you want to spend per person? Please say Budget or 
+                the amount per person you want to spend.`
+
+        }else{
+            let budgetAmount =parseInt(budget);
+            let remaining=0;
+             SpendingUtils.getSpendingAmount(category, (spendingAmount) => {
+            console.log(spendingAmount);
+             remaining = parseInt(budgetAmount) -parseInt(spendingAmount);
+            console.log('budgetAmount',budgetAmount);
+            console.log('spendingAmount',spendingAmount);
+                });
+            console.log('remaining ',remaining);
             
-            term: event.requiredParams.term,//this.event.request.intent.slots.term,
-            location:event.requiredParams.location
+            if(remaining <= 0){
+                console.log('set up the budget',remaining);
+                 this.state =states.STARTMODE;
+                this.emitWithState('BudgetSummary',category);  
+            } else if (remaining > 0 &&  people==null){
+                console.log('ask no of people');
+                message =`For how many people, you are planning to pay for?`
+            }else if (remaining > 0 &&  people!=null  && rating ==null){//add distance
+                console.log('check the budget',remaining);
+                message =`Great. I have got couple of options for you. 
+                But before that I want to tell you that you can also give me preferences for cuisine,
+                 distance or ratings.`
+            }else if( rating !=null ){
+                this.state =states.SEARCHMODE;
+                this.emitWithState('FindTheRestaurantIntent');  
+            }
+            else
+            {
+                message ='Sorry, I could not find an option under your budget. Please tell me what can I do for you or say help.';
+            };
+
         };
-        console.log('SearchIntent');
-       let allRestaurants= YelpClient.getAllRestaurants(required_params,additional_params);
-        if(allRestaurants.length==0 || additional_params==null){
-            this.state =states.SURPRISEMODE;
-            this.emitWithState('surpriseIntent');  
+        console.log(message);
+        this.emit(':tell',message);
+
+},
+
+    'FindTheRestaurantIntent': function (){
+       var slots = this.event.request.intent.slots;
+       let  message;
+       console.log('category',slots.category.value);
+       var additional_params={
+        budgetAmount:slots.budget.value,
+       // distance:slots.distance.value,
+        'rating':4,
+        'price':slots.price.value
+        };
+        var required_params = {            
+            'term': slots.category.value,
+            'location':slots.location.value
+        };
+        
+        //allRestaurants= YelpClient.getRestaurantsByAdditionalParams(required_params,additional_params); //commented for tessting
+       
+        if(allRestaurants=='undefined' || additional_params==null){     
+            console.log('No options');
+            message=`Sorry, I could not find an option under your budget. Please tell me what can I do for you or say help.`;  
         }
         else{
-            this.emit(':tell',"I found the places for you" );
-            for (var i = 0; i < allRestaurants.length; i++) {
-               var priceRange= YelpClient.getPriceRange(allRestaurants[i].price);
-              let  message =`Wonderful. How about ${allRestaurants[i].name}  located at ${allRestaurants[i].location}.
-                 Their rating is ${allRestaurants[i].rating} stars. 
-                 Price range for one person would be ${priceRange}. 
-                 Does this work for you? Or say Repeat.`
-               this.emit(':tell',message);
-             }
+            console.log('SearchIntent',allRestaurants.length);
+            currentRestaurantInd=0;
+            message =getResponseMessage(allRestaurants,currentRestaurantInd); 
             
-            this.emit(':tell','Done with search. Please say stop to quit');
         };
+        console.log('restaurant: ',message); 
+        this.emit(':tell',message);
+
     },
+    'AMAZON.YesIntent': function() { 
+        this.handler.state = '';
+        allRestaurants=[];
+        currentRestaurantInd=null;
+        this.emit(':tell',`Bingo. Thanks for using MASS. Good Bye.`);  
+      },
+      'AMAZON.NoIntent': function() { 
+        console.log('No intent',allRestaurants);
+        currentRestaurantInd= currentRestaurantInd+1; 
+        let message = getResponseMessage(allRestaurants,currentRestaurantInd); 
+        this.emit(':tell',message);
+      },
+      'AMAZON.NextIntent': function() { 
+        currentRestaurantInd= currentRestaurantInd+1;  
+        let message =  getResponseMessage(allRestaurants,currentRestaurantInd); 
+        this.emit(':tell',message);  
+      },
+      'AMAZON.PreviousIntent': function() { 
+        currentRestaurantInd= currentRestaurantInd-1;  
+        let message =  getResponseMessage(allRestaurants,currentRestaurantInd); 
+        this.emit(':tell',message);  
+      },
+   
     'AMAZON.CancelIntent': function() {
         this.handler.state = '';
+         allRestaurants=[];
+        currentRestaurantInd=null;
         this.emit('NewSession');
     },
     'AMAZON.StopIntent': function () {
+        this.handler.state = '';
+         allRestaurants=[];
+        currentRestaurantInd=null;
         this.emit(':tell', 'Goodbye' );
 
     },
 
     'AMAZON.HelpIntent': function () {  
-       this.emit(':ask', 'please say the category to seach the place to go' );
+       this.emit(':ask', 'please say the category to search' );
 
     },
     
@@ -314,30 +388,34 @@ var surpriseModeHandlers = Alexa.CreateStateHandler(states.SURPRISEMODE, {
     },
 
     'SurpriseIntent': function (){
+       console.log('SurpriseIntent--');
+       let category = this.event.request.intent.slots.category.value;
 
-        var required_params = {
-            term: event.requiredParams.term,//this.event.request.intent.slots.term,
-            location:event.requiredParams.location
+       SpendingUtils.getFavouritePlace(category, (favouritePlace) => {
+        let message ;
+        if(favouritePlace!=null){
+        var required_params = { term: favouritePlace, location: 'Mclean,VA' };//
+        allRestaurants= YelpClient.getRestaurantsByrequiredParams(required_params,null);
+        console.log('allRestaurants:',allRestaurants);
+        message = getResponseMessage(allRestaurants,currentRestaurantInd); 
+        }
+        else{
+            message=HELP_MESSAGE;
         };
-       var surprisePlace = SpendingUtils.getFavouritePlace();
-       required_params.term=surprisePlace;
-       var additionalParams;
-     
-       let allRestaurants= YelpClient.getAllRestaurants(required_params,additionalParams);
-       var priceRange= YelpClient.getPriceRange(allRestaurants[0].price);
-         let  message =`Wonderful. How about ${allRestaurants[0].name}  located at ${allRestaurants[0].location}.
-                 Their rating is ${allRestaurants[0].rating} stars. 
-                 Price range for one person would be ${priceRange}. 
-                 Does this work for you? Or say Repeat.`
-         this.emit(':tell',message);    
+        console.log(message);
+        this.emit(':tell',message);    
+       
+        });
          
     },
-    'AMAZON.YesIntent': function() {  // Yes, I want to start the practice
-        this.state =states.SURPRISEMODE;
-        this.emitWithState('surpriseIntent');  
+   'AMAZON.YesIntent': function() { 
+        this.handler.state = '';
+        allRestaurants=[];
+        this.emit(':tell',`Bingo. Thanks for using MASS. Good Bye.`);  
       },
      'AMAZON.NoIntent': function() {
-        this.emit(':tell', 'Okay, Please seach with proper term, goodbye!');
+        this.handler.state = '';
+        this.emit(':tell', 'Okay, Please seach again, goodbye!');
     },
 
     'AMAZON.CancelIntent': function() {
@@ -401,5 +479,34 @@ var getBudget = (category, callback) => {
     budgetCollection.findOne({category: category}, (err, doc) => {
         return callback(doc);
     });
+}
+
+//----------------------Restaurant Function----------------------
+
+let getResponseMessage=(data,i)=>{
+   
+let  message =`okay. How about ${data[i].name}  located at ${data[i].location}.
+                 Their rating is ${data[i].rating} stars.
+                 Price range for one person would be ${getPriceRange(data[i].price)} dollars. 
+                 Does this work for you? Or say Repeat.`
+
+ console.log('getResponseMessage',message);
+  return message; 
+}
+
+let getPriceRange=(symbol)=>{
+  console.log('Inside getPrice.');
+  if (symbol =="$"){
+    return "Under 10";
+  }else if (symbol =="$$" ){
+    return "between 11 to 30 ";
+  }
+  else if (symbol =="$$$"){
+    return "between 31 to 60";
+  }
+  else if (symbol =="$$$$"){
+    return "greater than 60";
+  };
+  return null;
 }
 
