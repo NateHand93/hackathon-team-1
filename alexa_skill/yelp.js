@@ -6,10 +6,9 @@ var bigdecimal = require('bigdecimal');
 var SpendingUtils = require('./spending-utils');
 const clientId = 'IOi-_0QBEv1UQx2vrr8TYg'; //process.env["SPENDING_CLIENT_ID"];
 const clientSecret = 'RW40zUADkLsO08M5qjAfZ3BnqM8hXEtRp3kcgVl6PPvs4dwoJoOfEEe9kolpDi9j';//process.env["SPENDING_CLIENT_SECRET"];
-const yelpClient={};
-global.restaurentList = [];
+var yelpClient={};
 
-yelpClient.getRestaurantsByrequiredParams=(requiredParams)=>{
+yelpClient.getRestaurantsByrequiredParams=(requiredParams, callback)=>{
  
 yelp.accessToken(clientId, clientSecret).then(response => {
   var client = yelp.client(response.jsonBody.access_token);
@@ -17,7 +16,7 @@ yelp.accessToken(clientId, clientSecret).then(response => {
     var b = response.jsonBody.businesses;
     var convertedJson = JSON.stringify(b);
     var obj = JSON.parse(convertedJson);
-    return parseResponse(obj);
+    return callback(parseResponse(obj));
   });
 }).catch(e => {
   console.log(e);
@@ -27,27 +26,51 @@ yelp.accessToken(clientId, clientSecret).then(response => {
 
 let  parseResponse=(restaurants)=> {
 {
- for(var i = 0; i < restaurants.length;i++){
+  let list = [];
+  for(var i = 0; i < restaurants.length;i++){
      var  restaurant ={'name':restaurants[i].name,'location':getAddress(restaurants[i].location),'rating':restaurants[i].rating,'distance':getMiles(restaurants[i].distance),'price':restaurants[i].price,};
-      global.restaurentList.push(restaurant);      
+      list.push(restaurant);      
   }
-  var list = global.restaurentList?global.restaurentList:null; 
   console.log('list:',list);
   return list ;
 }
 }
 
-yelpClient.getRestaurantsByAdditionalParams=(params,additionalParams)=>{
+yelpClient.getRestaurantsByAdditionalParams=(params,additionalParams, callback)=>{
 
-  var all = yelpClient.getRestaurantsByrequiredParams(params);
-  console.log(all);
-       var list = findByGivenParams(additionalParams,all);
-       console.log(list.length);
-      return list
+  yelpClient.getRestaurantsByrequiredParams(params, (all) => {
+      console.log(all);
+      var list = findByGivenParams(additionalParams,all);
+      console.log(list.length);
+      callback(list);
+  });
+
 }
 
 let findByGivenParams=(params,restaurants)=>{
-  var result = _.filter(restaurants,buildParams(params));
+  var result = _.filter(restaurants, (restaurant) => {
+    console.log("param method thing: " + JSON.stringify(restaurant));
+    var price;
+    if (!params.price && params.budgetAmount && params.peopleCount) {
+      price = getPrice(params.budgetAmount, params.peopleCount);
+    } else {
+      price = params.price;
+    }
+
+    if (price && (!restaurant.price || restaurant.price.length > price.length)) {
+      return false;
+    }
+
+    if (params.rating && (!restaurant.rating || restaurant.rating < params.rating)) {
+      return false;
+    }
+
+    if (params.distance && (!restaurant.distance || restaurant.distance > getMeters(params.distance))) {
+      return false;
+    }
+
+    return true;
+  });
   console.log('result:',result.length);
 
   var finalResult = result? result:null;  
@@ -69,7 +92,7 @@ let buildParams = (params) => {
     parameters.rating=params.rating;
   };
    if(params.distance){
-     var distanceInMiles = new bigdecimal.BigDecimal(params.distance) ;
+     var distanceInMiles = params.distance ;
      parameters.distance = getMeters(distanceInMiles);
   };
   console.log('parameters : ',parameters);
@@ -113,7 +136,7 @@ let getPriceRange=(symbol)=>{
 
 let getMeters=(i)=> {
   console.log('getMeters');
-     return i/0.000621371192;
+     return Math.round(i/0.000621371192);
 }
 
 let getMiles=(i)=> {
