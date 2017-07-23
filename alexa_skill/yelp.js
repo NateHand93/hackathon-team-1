@@ -3,14 +3,10 @@
 var yelp = require('yelp-fusion');
 var _ = require('lodash');
 var bigdecimal = require('bigdecimal');
-<<<<<<< HEAD
-var yelpClient={};
-=======
 var SpendingUtils = require('./spending-utils');
 const clientId = 'IOi-_0QBEv1UQx2vrr8TYg'; //process.env["SPENDING_CLIENT_ID"];
 const clientSecret = 'RW40zUADkLsO08M5qjAfZ3BnqM8hXEtRp3kcgVl6PPvs4dwoJoOfEEe9kolpDi9j';//process.env["SPENDING_CLIENT_SECRET"];
 const yelpClient={};
->>>>>>> 8ad424e0dff47379aed7188f3b0d26f38b876210
 global.restaurentList = [];
 
 yelpClient.getRestaurantsByrequiredParams=(requiredParams)=>{
