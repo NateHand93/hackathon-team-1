@@ -141,11 +141,11 @@ let getMeters=(i)=> {
 
 let getMiles=(i)=> {
   console.log('getMiles');
-     return parseInt(i)*0.000621371192;
+     return Math.round(parseInt(i)*0.000621371192);
 }
 
  let getAddress=(addressObject)=>{
-   return (addressObject.address1+','+addressObject.address2+','+addressObject.city+','+addressObject.state+','+ addressObject.zip_code);
+   return (addressObject.address1+', '+addressObject.city+', '+addressObject.state+', '+ addressObject.zip_code);
 }
-
+yelpClient.getPrice = getPrice;
 module.exports=yelpClient

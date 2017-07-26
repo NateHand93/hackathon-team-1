@@ -8,6 +8,7 @@ var SpendingUtils = require('./spending-utils');
 let atlas_connection_uri;
 let cachedDb = null;
 
+const RESTAURANT_FREQUENCY = 7;
 const states = {
     STARTMODE: '_STARTMODE',
 	SEARCHMODE: '_SEARCHMODE',
@@ -18,15 +19,13 @@ var languageStrings = {
     'en-US': {
         'translation': {
            'WELCOME_MESSAGE':"Welcome to the MASS, good to hear from you. Please tell me what can I do for you or say help.",
-           'SEARCH_MESSAGE':"Say  restaurant name and budget",
+           'SEARCH_MESSAGE':"Alright, let's find a restaurant for you. If you don't know how to search, say 'help' for some examples.",
            'SURPRISE_ME': "Okay, Are you ready for the surprise list. You can say yes to surprise list, or say no to quit.?",
            'HELP_MESSAGE': "MASS is an agent who can help you with your personal finances is also a scout for you to provide guidance in spending money. Now you can say: MASS set-up the budget or find restaurant. Now please tell me how I can help you. "
         }
    }
 };
-global.currentRestaurantInd=0;
 
-global.allRestaurants=[];
 /*{ name: 'Haandi Indian Cuisine',
     location: '1222 W Broad St,,Falls Church,VA,22046',
     rating: 4,
@@ -39,7 +38,7 @@ global.allRestaurants=[];
     price: '$$' }];*/
 
 exports.handler = (event, context, callback) => {
-    context.callbackWaitsForEmptyEventLoop = false;
+    //context.callbackWaitsForEmptyEventLoop = false;
     initializeDbConnectionThen(() => {
         var alexa = Alexa.handler(event, context, callback);
 		alexa.resources = languageStrings;
@@ -103,16 +102,16 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
         this.emit('NewSession');
     },
 
-    'SetUpBudget': function() {
+    'SetUpBudgetIntent': function() {
+        if (this.event.request.dialogState !== 'COMPLETED') {
+            this.emit(':delegate');
+            return;
+        }
         var slots = this.event.request.intent.slots
         var amount = slots.amount.value;
         var category = slots.category.value;
         console.log(slots);
 
-        if (this.event.request.dialogState !== 'COMPLETED') {
-            this.emit(':delegate');
-            return;
-        }
         var budget = {
             amount,
             category
@@ -127,15 +126,16 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
         });
     },
 
-    'ModifyBudget': function() {
+    'ModifyBudgetIntent': function() {
+        if (this.event.request.dialogState !== 'COMPLETED') {
+            this.emit(':delegate');
+            return;
+        }
         var slots = this.event.request.intent.slots;
         var amount = slots.amount.value;
         var category = slots.category.value;
         console.log(slots);
-        if (this.event.request.dialogState !== 'COMPLETED') {
-            this.emit(':delegate');
-            return;
-        }
+
         var budget = {
             amount,
             category
@@ -151,7 +151,7 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
 
     },
 
-    'DeleteBudget': function() {
+    'DeleteBudgetIntent': function() {
         var slots = this.event.request.intent.slots;
         var category = slots.category.value;
         console.log(slots);
@@ -169,13 +169,13 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
         });
     },
 
-    'BudgetSummary': function() {
-        var slots = this.event.request.intent.slots;
-        var category = slots.category.value;
+    'BudgetSummaryIntent': function() {
         if (this.event.request.dialogState !== 'COMPLETED') {
             this.emit(':delegate');
             return;
         }
+        var slots = this.event.request.intent.slots;
+        var category = slots.category.value;
 
         getBudget(category, (budget) => {
             if (!budget) {
@@ -241,20 +241,99 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
 
 var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
 
-      'NewSession': function() {
+    'NewSession': function() {
         this.emit('NewSession');
     },
 
-    'searchCriteriaIntent':function (){
+    'SearchCriteriaIntent': function() {
+        let slots = this.event.request.intent.slots;
+        
+        if (!slots.people) {
+            this.emit(':ask', "Your search was incomplete. Please try again.");
+        }
+
+        this.attributes.searchStarted = true;
+        if (!slots.budget) {
+            this.emitWithState('BudgetSearchIntent');
+        } else {
+            this.emitWithState('CustomSearchIntent');
+        }
+
+    },
+
+    'BudgetSearchIntent': function() {
+        let slots = this.event.request.intent.slots;
+        let requiredParams = {
+            term: slots.cuisine ? slots.cuisine.value : 'Food',
+            location: 'McLean, VA' //hardcoded for now, will implement location service later
+        }
+
+        calculateRestaurantBudget((budget) => {
+
+            if (budget == null) {
+                this.handler.state = STARTMODE;
+                this.attributes.searchStarted = false;
+                this.emit(':ask', 'Looks like you haven\'t set your budget for restaurants yet. Please set up your monthly budget for restaurants.');
+            }
+
+            if (budget <= 0) {
+                this.handler.state = STARTMODE;
+                this.attributes.searchStarted = false;
+                this.emit(':ask', 'Uh oh. You\'ve already spent your monthly budget for restuarants this month. Try modifying your budget.');
+            }
+
+            let optionalParams = {
+                distance: slots.distance ? slots.distance.value : null,
+                rating: slots.rating ? slots.rating.value : null,
+                price: YelpClient.getPrice(budget, slots.people.value)
+            }
+
+            YelpClient.getRestaurantsByAdditionalParams(requiredParams, optionalParams, (restaurants) => {
+
+                if (!restaurants) {
+                    this.handler.state = STARTMODE;
+                    this.attributes.searchStarted = false;
+                    this.emit(':ask', 'Sorry, we couldn\'t find a restaurant within your budget. Try broadening your search.');
+                }
+
+                this.attributes.currentRestaurantInd = 0;
+                this.attributes.allRestaurants = restaurants;
+                let message = getResponseMessage(restaurants,this.attributes.currentRestaurantInd);
+                this.emit(':ask', message);
+
+            });
+
+        });
+
+
+
+
+
+
+
+    },
+
+    'CustomSearchIntent': function() {
+
+    },
+
+
+
+
+
+
+
+
+    'SearchCriteriaIntent':function (){
      var slots = this.event.request.intent.slots;
-     let category = slots.category.value;
-     let budget = slots.budget.value;
-     let people = slots.people.value;
-    // let distance =slots.distance.value;
-     let rating  =slots.rating.value;
-    // let price = slots.price.value;
-     let message
-        if(slots.budget.value ==null){
+     let category = slots.category ? slots.category.value : null;
+     let budget = slots.budget ? slots.budget.value : null;
+     let people = slots.people ? slots.people.value : null;
+     let distance = slots.distance ? slots.distance.value : null;
+     let rating  = slots.rating ? slots.rating.value : null;
+     let price = slots.price ? slots.price.value : null;
+     let message;
+        if(!slots.budget){
              message =   `Let’s find a restaurant for you. Please tell me if you would prefer an option based on your 
                 defined budget or tell me how much you want to spend per person? Please say Budget or 
                 the amount per person you want to spend.`
@@ -262,7 +341,7 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
         }else{
             let budgetAmount =parseInt(budget);
             let remaining=0;
-             SpendingUtils.getSpendingAmount(category, (spendingAmount) => {
+            SpendingUtils.getSpendingAmount('restaurants', (spendingAmount) => {
             console.log(spendingAmount);
              remaining = parseInt(budgetAmount) -parseInt(spendingAmount);
             console.log('budgetAmount',budgetAmount);
@@ -299,68 +378,92 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
 
     'FindTheRestaurantIntent': function (){
        var slots = this.event.request.intent.slots;
-       let  message;
+       let message;
        console.log('category',slots.category.value);
        var additional_params={
-        budgetAmount:slots.budget.value,
-       // distance:slots.distance.value,
-        'rating':4,
-        'price':slots.price.value
+        'distance': slots.distance ? slots.distance.value : null,
+        'rating': slots.rating ? slots.rating.value : null,
+        'price': slots.price ? slots.price.value : null
         };
         var required_params = {            
-            'term': slots.category.value,
-            'location':slots.location.value
+            'term': 'food',
+            'location':slots.location ? slots.location.value : 'mclean, va'
         };
         
-        //allRestaurants= YelpClient.getRestaurantsByAdditionalParams(required_params,additional_params); //commented for tessting
-       
-        if(allRestaurants=='undefined' || additional_params==null){     
-            console.log('No options');
-            message=`Sorry, I could not find an option under your budget. Please tell me what can I do for you or say help.`;  
-        }
-        else{
-            console.log('SearchIntent',allRestaurants.length);
-            currentRestaurantInd=0;
-            message =getResponseMessage(allRestaurants,currentRestaurantInd); 
-            
-        };
-        console.log('restaurant: ',message); 
-        this.emit(':tell',message);
+        YelpClient.getRestaurantsByAdditionalParams(required_params, (allRestaurants) => {
+            if(!allRestaurants){     
+                console.log('No options');
+                message=`Sorry, I could not find an option under your budget. Please tell me what can I do for you or say help.`;  
+            }
+            else{
+                console.log('SearchIntent',allRestaurants.length);
+                this.attributes.currentRestaurantInd=0;
+                message =getResponseMessage(this.attributes.allRestaurants,this.attributes.currentRestaurantInd); 
+                
+            };
+            console.log('restaurant: ',message); 
+            this.emit(':ask',message);
+        });
+
+        
 
     },
     'AMAZON.YesIntent': function() { 
-        this.handler.state = '';
-        allRestaurants=[];
-        currentRestaurantInd=null;
-        this.emit(':tell',`Bingo. Thanks for using MASS. Good Bye.`);  
+        if (this.attributes.searchStarted) {
+            this.handler.state = '';
+            this.attributes.allRestaurants=[];
+            this.attributes.currentRestaurantInd=null;
+            this.emit(':tell',`Bingo. Thanks for using MASS. Good Bye.`);  
+        } else {
+            this.emitWithState('Unhandled');
+        }
       },
-      'AMAZON.NoIntent': function() { 
-        console.log('No intent',allRestaurants);
-        currentRestaurantInd= currentRestaurantInd+1; 
-        let message = getResponseMessage(allRestaurants,currentRestaurantInd); 
-        this.emit(':tell',message);
+      'AMAZON.NoIntent': function() {
+        if (this.attributes.searchStarted) {
+            console.log('No intent',this.attributes.allRestaurants);
+            this.attributes.currentRestaurantInd= this.attributes.currentRestaurantInd+1; 
+            let message = getResponseMessage(this.attributes.allRestaurants,this.attributes.currentRestaurantInd); 
+            this.emit(':ask',message);
+        } else {
+            this.emitWithState('Unhandled');
+        }
       },
       'AMAZON.NextIntent': function() { 
-        currentRestaurantInd= currentRestaurantInd+1;  
-        let message =  getResponseMessage(allRestaurants,currentRestaurantInd); 
-        this.emit(':tell',message);  
+        if (this.attributes.searchStarted && 
+            this.attributes.allRestaurants[this.attributes.currentRestaurantInd]) {
+            this.attributes.currentRestaurantInd= this.attributes.currentRestaurantInd+1;  
+            let message =  getResponseMessage(this.attributes.allRestaurants,this.attributes.currentRestaurantInd); 
+            this.emit(':ask',message);
+        } else if (this.attributes.searchStarted &&
+            !this.attributes.allRestaurants[this.attributes.currentRestaurantInd]) {
+            this.emit(':ask', 'We don\'t have any more suggestions for you. Say previous to go back to last'
+            + 'suggestion or cancel if you want to start a new search');
+        } else {
+            this.emitWithState('Unhandled');
+        }
       },
-      'AMAZON.PreviousIntent': function() { 
-        currentRestaurantInd= currentRestaurantInd-1;  
-        let message =  getResponseMessage(allRestaurants,currentRestaurantInd); 
-        this.emit(':tell',message);  
+      'AMAZON.PreviousIntent': function() {
+        if (this.attributes.searchStarted) {
+            this.attributes.currentRestaurantInd= this.attributes.currentRestaurantInd-1;  
+            let message =  getResponseMessage(this.attributes.allRestaurants,this.attributes.currentRestaurantInd); 
+            this.emit(':ask',message);  
+        } else {
+            this.emitWithState('Unhandled');
+        }
       },
    
     'AMAZON.CancelIntent': function() {
+        this.attributes.searchStarted = false;
         this.handler.state = '';
-         allRestaurants=[];
-        currentRestaurantInd=null;
+        this.attributes.allRestaurants=[];
+        this.attributes.currentRestaurantInd=null;
         this.emit('NewSession');
     },
     'AMAZON.StopIntent': function () {
+        this.attributes.searchStarted = false;
         this.handler.state = '';
-         allRestaurants=[];
-        currentRestaurantInd=null;
+        this.attributes.allRestaurants=[];
+        this.attributes.currentRestaurantInd=null;
         this.emit(':tell', 'Goodbye' );
 
     },
@@ -392,30 +495,37 @@ var surpriseModeHandlers = Alexa.CreateStateHandler(states.SURPRISEMODE, {
        let category = this.event.request.intent.slots.category.value;
 
        SpendingUtils.getFavouritePlace(category, (favouritePlace) => {
+           console.log("Favourite place: " + favouritePlace);
         let message ;
         if(favouritePlace!=null){
-        var required_params = { term: favouritePlace, location: 'Mclean,VA' };//
-        allRestaurants= YelpClient.getRestaurantsByrequiredParams(required_params,null);
-        console.log('allRestaurants:',allRestaurants);
-        message = getResponseMessage(allRestaurants,currentRestaurantInd); 
+           console.log("hey, it's not null");
+        var requiredParams = { term: favouritePlace, location: 'Mclean,VA' };//
+
+        YelpClient.getRestaurantsByrequiredParams(requiredParams,(allRestaurants) => {
+            //console.log('Surprise Intent allRestaurants:' + JSON.stringify(allRestaurants));
+             message = getResponseMessage(allRestaurants,this.attributes.currentRestaurantInd); 
+             //console.log(message);
+        this.emit(':tell',message); 
+        });
+        
         }
         else{
+            console.log('else');
             message=HELP_MESSAGE;
         };
-        console.log(message);
-        this.emit(':tell',message);    
+           
        
         });
          
     },
    'AMAZON.YesIntent': function() { 
         this.handler.state = '';
-        allRestaurants=[];
+        this.attributes.allRestaurants=[];
         this.emit(':tell',`Bingo. Thanks for using MASS. Good Bye.`);  
       },
      'AMAZON.NoIntent': function() {
         this.handler.state = '';
-        this.emit(':tell', 'Okay, Please seach again, goodbye!');
+        this.emit(':tell', 'Okay, Please search again, goodbye!');
     },
 
     'AMAZON.CancelIntent': function() {
@@ -481,10 +591,39 @@ var getBudget = (category, callback) => {
     });
 }
 
+var calculateRestaurantBudget = (callback) => {
+    getBudget('restaurants', (budget) => {
+        if (!budget) {
+            budget = null;
+            callback(budget);
+        } else {
+            SpendingUtils.getSpendingAmount('restaurants', (spendingAmount) => {
+                spendingAmount = spendingAmount.doubleValue();
+                let remaining = budget.amount - spendingAmount;
+                let remainingDays = getRemainingDaysInMonth();
+                if (remainingDays <= RESTAURANT_FREQUENCY) {
+                    callback(remaining);
+                } else {
+                    let remainingVisits = parseInt(remainingDays/RESTAURANT_FREQUENCY);
+                    remaining = (remaining/remainingVisits).toFixed(2);
+                    callback(remaining);
+                }
+            })
+        }
+    });
+}
+
+var getRemainingDaysInMonth = () => {
+    let now = new Date();
+    let totalDaysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    let currentDay = now.getDate();
+    return totalDaysInMonth - currentDay;
+}
+
 //----------------------Restaurant Function----------------------
 
 let getResponseMessage=(data,i)=>{
-   
+
 let  message =`okay. How about ${data[i].name}  located at ${data[i].location}.
                  Their rating is ${data[i].rating} stars.
                  Price range for one person would be ${getPriceRange(data[i].price)} dollars. 
@@ -499,14 +638,13 @@ let getPriceRange=(symbol)=>{
   if (symbol =="$"){
     return "Under 10";
   }else if (symbol =="$$" ){
-    return "between 11 to 30 ";
+    return "between 11 and 30 ";
   }
   else if (symbol =="$$$"){
-    return "between 31 to 60";
+    return "between 31 and 60";
   }
   else if (symbol =="$$$$"){
     return "greater than 60";
   };
   return null;
 }
-
