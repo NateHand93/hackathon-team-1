@@ -314,6 +314,33 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
     },
 
     'CustomSearchIntent': function() {
+        let slots = this.event.request.intent.slots;
+        let requiredParams = {
+            term: slots.cuisine ? slots.cuisine.value : 'Food',
+            location: 'McLean, VA' //hardcoded for now, will implement location service later
+        }
+
+        let optionalParams = {
+            distance: slots.distance ? slots.distance.value : null,
+            rating: slots.rating ? slots.rating.value : null,
+            price: YelpClient.getPrice(slots.budget.value, slots.people.value)
+        }
+
+        YelpClient.getRestaurantsByAdditionalParams(requiredParams, optionalParams, (restaurants) => {
+
+            if (!restaurants) {
+                this.handler.state = STARTMODE;
+                this.attributes.searchStarted = false;
+                this.emit(':ask', 'Sorry, we couldn\'t find a restaurant within your budget. Try broadening your search.');
+            }
+
+            this.attributes.currentRestaurantInd = 0;
+            this.attributes.allRestaurants = restaurants;
+            let message = getResponseMessage(restaurants,this.attributes.currentRestaurantInd);
+            this.emit(':ask', message);
+
+        });
+
 
     },
 
@@ -324,7 +351,7 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
 
 
 
-    'SearchCriteriaIntent':function (){
+    /*'SearchCriteriaIntent':function (){
      var slots = this.event.request.intent.slots;
      let category = slots.category ? slots.category.value : null;
      let budget = slots.budget ? slots.budget.value : null;
@@ -407,7 +434,7 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
 
         
 
-    },
+    },*/
     'AMAZON.YesIntent': function() { 
         if (this.attributes.searchStarted) {
             this.handler.state = '';
