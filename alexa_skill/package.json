@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "alexa-sdk": "^1.0.10",
+    "alexa-sdk": "^1.0.11",
     "bigdecimal": "^0.6.1",
     "lodash": "^4.17.4",
     "mongodb": "^2.2.29",

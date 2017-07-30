@@ -15,6 +15,12 @@ const states = {
     SURPRISEMODE:'_SURPRISEMODE'
 }
 
+const SAMPLE_SEARCHES = [
+    'Find me a fast-food restaurant within 5 miles for 1 person',
+    'Find me a restaurant for two people for 40 dollars',
+    'Find me an Indian restaurant rated 3 stars for 2 people'
+]
+
 var languageStrings = {
     'en-US': {
         'translation': {
@@ -38,7 +44,7 @@ var languageStrings = {
     price: '$$' }];*/
 
 exports.handler = (event, context, callback) => {
-    //context.callbackWaitsForEmptyEventLoop = false;
+    context.callbackWaitsForEmptyEventLoop = false;
     initializeDbConnectionThen(() => {
         var alexa = Alexa.handler(event, context, callback);
 		alexa.resources = languageStrings;
@@ -104,7 +110,7 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
 
     'SetUpBudgetIntent': function() {
         if (this.event.request.dialogState !== 'COMPLETED') {
-            this.emit(':delegate');
+            this.emit(':delegate', this.event.request.intent);
             return;
         }
         var slots = this.event.request.intent.slots
@@ -128,7 +134,7 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
 
     'ModifyBudgetIntent': function() {
         if (this.event.request.dialogState !== 'COMPLETED') {
-            this.emit(':delegate');
+            this.emit(':delegate', this.event.request.intent);
             return;
         }
         var slots = this.event.request.intent.slots;
@@ -152,6 +158,10 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
     },
 
     'DeleteBudgetIntent': function() {
+        if (this.event.request.dialogState !== 'COMPLETED') {
+            this.emit(':delegate', this.event.request.intent);
+            return;
+        }
         var slots = this.event.request.intent.slots;
         var category = slots.category.value;
         console.log(slots);
@@ -171,7 +181,7 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
 
     'BudgetSummaryIntent': function() {
         if (this.event.request.dialogState !== 'COMPLETED') {
-            this.emit(':delegate');
+            this.emit(':delegate', this.event.request.intent);
             return;
         }
         var slots = this.event.request.intent.slots;
@@ -230,7 +240,7 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
     },
     "SurpriseMeIntent": function() {
         this.handler.state = states.SURPRISEMODE;
-        this.emit(':ask', this.t("SURPRISE_ME"));
+        this.emitWithState('SurpriseIntent');
     },
   
     "AMAZON.HelpIntent": function() {
@@ -290,7 +300,7 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
 
             YelpClient.getRestaurantsByAdditionalParams(requiredParams, optionalParams, (restaurants) => {
 
-                if (!restaurants) {
+                if (!restaurants || !restaurants.length) {
                     this.handler.state = STARTMODE;
                     this.attributes.searchStarted = false;
                     this.emit(':ask', 'Sorry, we couldn\'t find a restaurant within your budget. Try broadening your search.');
@@ -325,10 +335,12 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
             rating: slots.rating ? slots.rating.value : null,
             price: YelpClient.getPrice(slots.budget.value, slots.people.value)
         }
-
+        console.log('Custom Search Intent');
+        console.log('Required Params:',requiredParams);
+        console.log('Optional Params')
         YelpClient.getRestaurantsByAdditionalParams(requiredParams, optionalParams, (restaurants) => {
 
-            if (!restaurants) {
+            if (!restaurants || !restaurants.length) {
                 this.handler.state = STARTMODE;
                 this.attributes.searchStarted = false;
                 this.emit(':ask', 'Sorry, we couldn\'t find a restaurant within your budget. Try broadening your search.');
@@ -496,7 +508,7 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
     },
 
     'AMAZON.HelpIntent': function () {  
-       this.emit(':ask', 'please say the category to search' );
+       this.emit(':ask', `Try saying "${SAMPLE_SEARCHES[parseInt(Math.random()*SAMPLE_SEARCHES.length)]}"`);
 
     },
     
@@ -519,9 +531,9 @@ var surpriseModeHandlers = Alexa.CreateStateHandler(states.SURPRISEMODE, {
 
     'SurpriseIntent': function (){
        console.log('SurpriseIntent--');
-       let category = this.event.request.intent.slots.category.value;
+       //let category = this.event.request.intent.slots.category.value;
 
-       SpendingUtils.getFavouritePlace(category, (favouritePlace) => {
+       SpendingUtils.getFavouritePlace('restaurants', (favouritePlace) => {
            console.log("Favourite place: " + favouritePlace);
         let message ;
         if(favouritePlace!=null){
@@ -529,16 +541,21 @@ var surpriseModeHandlers = Alexa.CreateStateHandler(states.SURPRISEMODE, {
         var requiredParams = { term: favouritePlace, location: 'Mclean,VA' };//
 
         YelpClient.getRestaurantsByrequiredParams(requiredParams,(allRestaurants) => {
-            //console.log('Surprise Intent allRestaurants:' + JSON.stringify(allRestaurants));
-             message = getResponseMessage(allRestaurants,this.attributes.currentRestaurantInd); 
-             //console.log(message);
-        this.emit(':tell',message); 
+            
+            if (!allRestaurants || !allRestaurants.length) {
+                this.handler.state = states.STARTMODE;
+                this.emit(':ask', `Sorry, Mass doesn't have enough information to surprise you.`,`Try searching for a restaurant`);
+            }
+            this.attributes.currentRestaurantInd = 0;
+            message = getResponseMessage(allRestaurants,this.attributes.currentRestaurantInd); 
+            this.emit(':ask',message); 
         });
         
         }
         else{
             console.log('else');
             message=HELP_MESSAGE;
+            this.emit(':ask', message);
         };
            
        
