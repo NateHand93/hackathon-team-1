@@ -9,66 +9,252 @@
       "samples": []
     },
     {
+      "name": "AMAZON.NextIntent",
+      "samples": []
+    },
+    {
+      "name": "AMAZON.PreviousIntent",
+      "samples": []
+    },
+    {
       "name": "AMAZON.StopIntent",
       "samples": []
     },
     {
-      "name": "SetUpBudget",
+      "name": "BudgetSummaryIntent",
+      "samples": [
+        "give me a spending summary for {category}",
+        "budget summary for {category}",
+        "give me an overview of my spending on {category}",
+        "give me an overview of my spending for {category}",
+        "give me a budget summary for {category}",
+        "what is my budget summary",
+        "tell me my budget summary",
+        "tell my budget summary",
+        "expense summary",
+        "expense summary for {category}",
+        "expenditure summary",
+        "expenditure summary for {category}",
+        "overview of expenditure",
+        "overview of my spending",
+        "overview of expenditure for {category}",
+        "overview of expenditure on {category}",
+        "budget overview",
+        "expense overview",
+        "expenditure overview",
+        "budget details",
+        "tell me my expense summary",
+        "tell me my expenditure summary",
+        "tell my expense summary",
+        "tell me my expense overview",
+        "tell me my expense details",
+        "tell me my expenditure overview",
+        "tell me my expenditure details",
+        "tell me my budget overview",
+        "tell me my budget details",
+        "tell me my spending summary",
+        "tell me my spending overview",
+        "tell me my spending details",
+        "what is my expense summary",
+        "what is my expenditure summary",
+        "what is my spending summary",
+        "what is my expense overview",
+        "what is my expenditure overview",
+        "what is my budget overview",
+        "what is my spending overview",
+        "give me my expense summary",
+        "give me my expenditure summary",
+        "give me my budget summary",
+        "give me my spending summary",
+        "give me my expense overview",
+        "give me my expenditure overview",
+        "give me my budget overview",
+        "give me my spending overview",
+        "give me my expense details",
+        "give me my expenditure details",
+        "give me my budget details",
+        "give me my spending details"
+      ],
+      "slots": [
+        {
+          "name": "category",
+          "type": "Category",
+          "samples": [
+            "{category}",
+            "I want a summary for {category}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "DeleteBudgetIntent",
+      "samples": [
+        "delete my budget for {category}",
+        "remove my budget for {category}",
+        "delete my budget information",
+        "delete my {category} budget",
+        "remove my {category} budget",
+        "remove my budget information",
+        "delete budget",
+        "remove budget"
+      ],
+      "slots": [
+        {
+          "name": "category",
+          "type": "Category",
+          "samples": [
+            "{category}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "FindTheRestaurantIntent",
+      "samples": [
+        "find me a restaurant",
+        "search restaurant",
+        "search for a restaurant",
+        "i'm hungry",
+        "put food in my belly",
+        "I'm feeling hungry",
+        "look for a restaurant",
+        "restaurant",
+        "bring some food for me"
+      ],
+      "slots": []
+    },
+    {
+      "name": "ModifyBudgetIntent",
+      "samples": [
+        "I want to modify my budget for {category}",
+        "I would like to modify my budget for {category}",
+        "I want to update my budget for {category}",
+        "I want to update my budget",
+        "I want to modify my budget",
+        "Update my budget for {category} to {amount} dollars",
+        "Update my budget to {amount} dollars for {category}",
+        "change my budget",
+        "change my budget to {amount} dollars for {category}",
+        "change my budget for {category} to {amount} dollars",
+        "update my budget"
+      ],
+      "slots": [
+        {
+          "name": "category",
+          "type": "Category",
+          "samples": [
+            "{category}"
+          ]
+        },
+        {
+          "name": "amount",
+          "type": "AMAZON.NUMBER",
+          "samples": [
+            "{amount}",
+            "{amount} dollars",
+            "{amount} dollars per month"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "SearchCriteriaIntent",
+      "samples": [
+        "Find me a {cuisine} restaurant for {people} people",
+        "Find me a restaurant for {people} people for {budget} dollars",
+        "Find me a {cuisine} restaurant within {distance} miles for {people} people with a rating of {rating} stars",
+        "Find me a {cuisine} restaurant within {distance} miles for {people} people with a rating of {rating} stars for {budget} dollars",
+        "find me a restaurant for {people} people",
+        "Find me a {cuisine} restaurant within {distance} miles for {people} person",
+        "Find me a {cuisine} restaurant within {distance} miles for {people} people",
+        "search for a {cuisine} restaurant within {distance} miles for {people} people",
+        "look for a {cuisine} restaurant within {distance} miles for {people} people",
+        "{cuisine} restaurant within {distance} miles for {people} people",
+        "{cuisine} restaurant {distance} miles {people} people",
+        "{people} people {cuisine} restaurant {distance} miles",
+        "{distance} miles {cuisine} restaurant {people} people",
+        "{people} people {distance} miles {cuisine} restaurant",
+        "{distance} miles {people} people {cuisine} restaurant",
+        "{cuisine} restaurant {people} people {distance} miles"
+      ],
+      "slots": [
+        {
+          "name": "cuisine",
+          "type": "Cuisine",
+          "samples": []
+        },
+        {
+          "name": "rating",
+          "type": "AMAZON.NUMBER",
+          "samples": []
+        },
+        {
+          "name": "budget",
+          "type": "AMAZON.NUMBER",
+          "samples": []
+        },
+        {
+          "name": "distance",
+          "type": "AMAZON.NUMBER",
+          "samples": []
+        },
+        {
+          "name": "people",
+          "type": "AMAZON.NUMBER",
+          "samples": []
+        }
+      ]
+    },
+    {
+      "name": "SetUpBudgetIntent",
       "samples": [
         "set my budget to {amount} dollars per month for {category}",
         "set my budget to {amount} dollars for {category}",
         "set my monthly budget for {category}",
         "set my budget to {amount} dollars",
-        "set my budget for {category} to {amount} dollars"
+        "set my budget for {category} to {amount} dollars",
+        "set up my budget",
+        "set up my budget for {category}",
+        "set up my monthly budget for {category}",
+        "set up my budget to {amount} dollars per month for {category}",
+        "set up my budget to {amount} dollars for category",
+        "set up my budget to {amount} dollars",
+        "create a budget for {category}",
+        "create a budget",
+        "create my budget",
+        "set up a budget",
+        "create a budget for {category} for {amount} dollars",
+        "create my budget for {amount} dollars",
+        "create my budget for {category}",
+        "create my budget for {amount} dollars per month for {category}"
       ],
       "slots": [
         {
           "name": "amount",
           "type": "AMAZON.NUMBER",
-          "samples": []
+          "samples": [
+            "{amount}",
+            "{amount} dollars",
+            "{amount} dollars per month"
+          ]
         },
         {
           "name": "category",
           "type": "Category",
-          "samples": []
+          "samples": [
+            "{category}"
+          ]
         }
       ]
     },
-	
-	          { "name": "FindTheRestaurantIntent",
-
-                "samples": [
-                        "Find a restaurant for me",
-                        "find {term} restaturant",
-                        "find restaturant within {distance} miles",
-                        "find {rating} restaturant",
-                        "find me an {term} restaurant around {distance} miles with {rating} star ratings for {peopleCount} people."
-                       
-                      ],
-                 "slots": [
-                 { "name": "location",
-                  "type": "AMAZON.STRING"
-                   },
-                { "name": "term",
-                  "type": "AMAZON.STRING"
-                   },
-                { "name": "rating",
-                  "type": "AMAZON.NUMBER"
-                   },
-                { "name": "distance",
-                  "type": "AMAZON.NUMBER"
-                   },
-                { "name": "budgetAmount",
-                  "type": "AMAZON.NUMBER"
-                   },
-                   { "name": "peopleCount",
-                  "type": "AMAZON.NUMBER"
-                   }   
-
-                   ] }
-	
-	
-	
+    {
+      "name": "SurpriseMeIntent",
+      "samples": [
+        "surprise me with a restaurant",
+        "surprise me"
+      ],
+      "slots": []
+    }
   ],
   "types": [
     {
@@ -78,7 +264,9 @@
           "id": null,
           "name": {
             "value": "Restaurants",
-            "synonyms": []
+            "synonyms": [
+              "restaurant"
+            ]
           }
         },
         {
@@ -180,6 +368,227 @@
           }
         }
       ]
+    },
+    {
+      "name": "Cuisine",
+      "values": [
+        {
+          "id": null,
+          "name": {
+            "value": "Indian",
+            "synonyms": []
+          }
+        },
+        {
+          "id": null,
+          "name": {
+            "value": "fast food",
+            "synonyms": []
+          }
+        },
+        {
+          "id": null,
+          "name": {
+            "value": "Chinese",
+            "synonyms": []
+          }
+        },
+        {
+          "id": null,
+          "name": {
+            "value": "Steak",
+            "synonyms": []
+          }
+        },
+        {
+          "id": null,
+          "name": {
+            "value": "Japanese",
+            "synonyms": []
+          }
+        },
+        {
+          "id": null,
+          "name": {
+            "value": "Brazilian",
+            "synonyms": []
+          }
+        },
+        {
+          "id": null,
+          "name": {
+            "value": "Burger",
+            "synonyms": []
+          }
+        }
+      ]
     }
-  ]
+  ],
+  "prompts": [
+    {
+      "id": "Elicit.Intent-BudgetSummaryIntent.IntentSlot-category",
+      "promptVersion": "1.0",
+      "definitionVersion": "1.0",
+      "variations": [
+        {
+          "type": "PlainText",
+          "value": "For which category would you like a budget summary?"
+        }
+      ]
+    },
+    {
+      "id": "Elicit.Intent-DeleteBudgetIntent.IntentSlot-category",
+      "promptVersion": "1.0",
+      "definitionVersion": "1.0",
+      "variations": [
+        {
+          "type": "PlainText",
+          "value": "For which category would you like to delete your budget?"
+        }
+      ]
+    },
+    {
+      "id": "Elicit.Intent-ModifyBudgetIntent.IntentSlot-category",
+      "promptVersion": "1.0",
+      "definitionVersion": "1.0",
+      "variations": [
+        {
+          "type": "PlainText",
+          "value": "Which category would you like to modify?"
+        }
+      ]
+    },
+    {
+      "id": "Elicit.Intent-ModifyBudgetIntent.IntentSlot-amount",
+      "promptVersion": "1.0",
+      "definitionVersion": "1.0",
+      "variations": [
+        {
+          "type": "PlainText",
+          "value": "How much do you want to spend per month on {category}?"
+        },
+        {
+          "type": "PlainText",
+          "value": "How much do you want to spend per month?"
+        }
+      ]
+    },
+    {
+      "id": "Elicit.Intent-SetUpBudgetIntent.IntentSlot-amount",
+      "promptVersion": "1.0",
+      "definitionVersion": "1.0",
+      "variations": [
+        {
+          "type": "PlainText",
+          "value": "How much money do you want to spend per month on {category}?"
+        },
+        {
+          "type": "PlainText",
+          "value": "To what amount would you like to set your budget?"
+        }
+      ]
+    },
+    {
+      "id": "Elicit.Intent-SetUpBudgetIntent.IntentSlot-category",
+      "promptVersion": "1.0",
+      "definitionVersion": "1.0",
+      "variations": [
+        {
+          "type": "PlainText",
+          "value": "For which category would you like to set the budget to {amount} dollars?"
+        },
+        {
+          "type": "PlainText",
+          "value": "For which category would you like to set the budget?"
+        }
+      ]
+    }
+  ],
+  "dialog": {
+    "version": "1.0",
+    "intents": [
+      {
+        "name": "BudgetSummaryIntent",
+        "confirmationRequired": false,
+        "prompts": {},
+        "slots": [
+          {
+            "name": "category",
+            "type": "Category",
+            "elicitationRequired": true,
+            "confirmationRequired": false,
+            "prompts": {
+              "elicit": "Elicit.Intent-BudgetSummaryIntent.IntentSlot-category"
+            }
+          }
+        ]
+      },
+      {
+        "name": "DeleteBudgetIntent",
+        "confirmationRequired": false,
+        "prompts": {},
+        "slots": [
+          {
+            "name": "category",
+            "type": "Category",
+            "elicitationRequired": true,
+            "confirmationRequired": false,
+            "prompts": {
+              "elicit": "Elicit.Intent-DeleteBudgetIntent.IntentSlot-category"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ModifyBudgetIntent",
+        "confirmationRequired": false,
+        "prompts": {},
+        "slots": [
+          {
+            "name": "category",
+            "type": "Category",
+            "elicitationRequired": true,
+            "confirmationRequired": false,
+            "prompts": {
+              "elicit": "Elicit.Intent-ModifyBudgetIntent.IntentSlot-category"
+            }
+          },
+          {
+            "name": "amount",
+            "type": "AMAZON.NUMBER",
+            "elicitationRequired": true,
+            "confirmationRequired": false,
+            "prompts": {
+              "elicit": "Elicit.Intent-ModifyBudgetIntent.IntentSlot-amount"
+            }
+          }
+        ]
+      },
+      {
+        "name": "SetUpBudgetIntent",
+        "confirmationRequired": false,
+        "prompts": {},
+        "slots": [
+          {
+            "name": "amount",
+            "type": "AMAZON.NUMBER",
+            "elicitationRequired": true,
+            "confirmationRequired": false,
+            "prompts": {
+              "elicit": "Elicit.Intent-SetUpBudgetIntent.IntentSlot-amount"
+            }
+          },
+          {
+            "name": "category",
+            "type": "Category",
+            "elicitationRequired": true,
+            "confirmationRequired": false,
+            "prompts": {
+              "elicit": "Elicit.Intent-SetUpBudgetIntent.IntentSlot-category"
+            }
+          }
+        ]
+      }
+    ]
+  }
 }
