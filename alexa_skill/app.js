@@ -222,6 +222,11 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
         })
     },
 
+    'SearchCriteriaIntent': function() {
+        this.handler.state = states.SEARCHMODE;
+        this.emitWithState('SearchCriteriaIntent');
+    },
+
     'SessionEndedRequest': function() {
         console.log('Session ended!')
         this.emit(':tell', 'Goodbye');
@@ -469,12 +474,12 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
       },
       'AMAZON.NextIntent': function() { 
         if (this.attributes.searchStarted && 
-            this.attributes.allRestaurants[this.attributes.currentRestaurantInd]) {
+            this.attributes.allRestaurants[this.attributes.currentRestaurantInd+1]) {
             this.attributes.currentRestaurantInd= this.attributes.currentRestaurantInd+1;  
             let message =  getResponseMessage(this.attributes.allRestaurants,this.attributes.currentRestaurantInd); 
             this.emit(':ask',message);
         } else if (this.attributes.searchStarted &&
-            !this.attributes.allRestaurants[this.attributes.currentRestaurantInd]) {
+            !this.attributes.allRestaurants[this.attributes.currentRestaurantInd+1]) {
             this.emit(':ask', 'We don\'t have any more suggestions for you. Say previous to go back to last'
             + 'suggestion or cancel if you want to start a new search');
         } else {
@@ -482,10 +487,14 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
         }
       },
       'AMAZON.PreviousIntent': function() {
-        if (this.attributes.searchStarted) {
+        if (this.attributes.searchStarted &&
+            this.attributes.allRestaurants[this.attributes.currentRestaurantInd-1]) {
             this.attributes.currentRestaurantInd= this.attributes.currentRestaurantInd-1;  
             let message =  getResponseMessage(this.attributes.allRestaurants,this.attributes.currentRestaurantInd); 
-            this.emit(':ask',message);  
+            this.emit(':ask',message);
+        } else if (this.attributes.searchStarted &&
+            !this.attributes.allRestaurants[this.attributes.currentRestaurantInd-1]) {
+            this.emit(':ask', 'You\'ve reached the beginning of the list. Say "next" to go to the next suggestion');
         } else {
             this.emitWithState('Unhandled');
         }
