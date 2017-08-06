@@ -263,8 +263,9 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
     'SearchCriteriaIntent': function() {
         let slots = this.event.request.intent.slots;
         
-        if (!slots.people) {
-            this.emit(':ask', "Your search was incomplete. Please try again.");
+        if (this.event.request.dialogState !== 'COMPLETED') {
+            this.emit(':delegate', this.event.request.intent);
+            return;
         }
 
         this.attributes.searchStarted = true;
