@@ -116,6 +116,12 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
         var slots = this.event.request.intent.slots
         var amount = slots.amount.value;
         var category = slots.category.value;
+
+        if (amount == '?' || category == '?') {
+            this.emitWithState('Unhandled');
+            return;
+        }
+
         console.log(slots);
 
         var budget = {
@@ -142,6 +148,11 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
         var category = slots.category.value;
         console.log(slots);
 
+        if (amount == '?' || category == '?') {
+            this.emitWithState('Unhandled');
+            return;
+        }
+
         var budget = {
             amount,
             category
@@ -165,6 +176,11 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
         var slots = this.event.request.intent.slots;
         var category = slots.category.value;
         console.log(slots);
+
+        if (amount == '?' || category == '?') {
+            this.emitWithState('Unhandled');
+            return;
+        }
 
         deleteBudget(category, (found) => {
             if (!found) {
