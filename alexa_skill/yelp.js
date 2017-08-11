@@ -101,8 +101,12 @@ let buildParams = (params) => {
 
   let  getPrice=(budgetAmount,peopleCount)=>{
   console.log('Inside getPrice.');
+  console.log('Budget amount: ' + budgetAmount);
+  console.log('People count' + peopleCount);
   var averageCost = parseInt(budgetAmount/peopleCount);
-  if (parseInt(averageCost) <=10){
+  if (averageCost <= 5) {
+    return null;
+  } else if (parseInt(averageCost) <=10 && averageCost > 5){
     return "$";
   }else if (parseInt(averageCost) <=11 && parseInt(averageCost) <=30 ){
     return "$$";

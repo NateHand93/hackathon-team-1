@@ -314,10 +314,18 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
                 this.emit(':ask', 'Uh oh. You\'ve already spent your monthly budget for restuarants this month. Try modifying your budget.');
             }
 
+            let price = YelpClient.getPrice(budget, slots.people.value);
+
+            if (price == null) {
+                this.handler.state = STARTMODE;
+                this.attributes.searchStarted = false;
+                this.emit(':ask', 'Uh oh. Looks like you can\'t afford to go out to eat. Try increasing your budget.');                
+            }
+
             let optionalParams = {
                 distance: slots.distance ? slots.distance.value : null,
                 rating: slots.rating ? slots.rating.value : null,
-                price: YelpClient.getPrice(budget, slots.people.value)
+                price: price
             }
 
             YelpClient.getRestaurantsByAdditionalParams(requiredParams, optionalParams, (restaurants) => {
@@ -352,10 +360,18 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
             location: 'McLean, VA' //hardcoded for now, will implement location service later
         }
 
+        let price = YelpClient.getPrice(slots.budget.value, slots.people.value);
+
+        if (price == null) {
+            this.handler.state = STARTMODE;
+            this.attributes.searchStarted = false;
+            this.emit(':ask', 'Uh oh. Looks like you can\'t afford to go out to eat. Try increasing your budget.');
+        }
+
         let optionalParams = {
             distance: slots.distance ? slots.distance.value : null,
             rating: slots.rating ? slots.rating.value : null,
-            price: YelpClient.getPrice(slots.budget.value, slots.people.value)
+            price: 
         }
         console.log('Custom Search Intent');
         console.log('Required Params:',requiredParams);
@@ -533,6 +549,16 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
 
     },
 
+    'AMAZON.RepeatIntent': function() {
+        if (this.attributes.searchStarted) {
+            this.attributes.currentRestaurantInd= this.attributes.currentRestaurantInd-1;  
+            let message =  getResponseMessage(this.attributes.allRestaurants,this.attributes.currentRestaurantInd); 
+            this.emit(':ask',message);
+        } else {
+            this.emitWithState('Unhandled');
+        }
+    },
+
     'AMAZON.HelpIntent': function () {  
        this.emit(':ask', `Try saying "${SAMPLE_SEARCHES[parseInt(Math.random()*SAMPLE_SEARCHES.length)]}"`);
 
@@ -696,8 +722,7 @@ let getResponseMessage=(data,i)=>{
 
 let  message =`okay. How about ${data[i].name}  located at ${data[i].location}.
                  Their rating is ${data[i].rating} stars.
-                 Price range for one person would be ${getPriceRange(data[i].price)} dollars. 
-                 Does this work for you? Or say Repeat.`
+                 Price range for one person would be ${getPriceRange(data[i].price)} dollars.`
 
  console.log('getResponseMessage',message);
   return message; 
