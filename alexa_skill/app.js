@@ -363,7 +363,7 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
         let price = YelpClient.getPrice(slots.budget.value, slots.people.value);
 
         if (price == null) {
-            this.handler.state = STARTMODE;
+             this.handler.state = STARTMODE;
             this.attributes.searchStarted = false;
             this.emit(':ask', 'Uh oh. Looks like you can\'t afford to go out to eat. Try increasing your budget.');
         }
@@ -371,7 +371,7 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
         let optionalParams = {
             distance: slots.distance ? slots.distance.value : null,
             rating: slots.rating ? slots.rating.value : null,
-            price: 
+            price: price
         }
         console.log('Custom Search Intent');
         console.log('Required Params:',requiredParams);
