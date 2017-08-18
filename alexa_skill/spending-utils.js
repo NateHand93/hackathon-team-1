@@ -50,7 +50,7 @@ SpendingUtils.getFavouritePlace = (category, callback) => {
     console.log('queryArgs : ',queryArgs);
     restClient.get(spendingUrl, {parameters: queryArgs}, (data, res) => {
         //get the data from table with lowest price of last two months visit
-        callback("starbucks");
+        callback("olive garden");
     });
 }
 
