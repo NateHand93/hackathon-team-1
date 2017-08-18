@@ -177,7 +177,7 @@ var startModeHandlers = Alexa.CreateStateHandler(states.STARTMODE, {
         var category = slots.category.value;
         console.log(slots);
 
-        if (amount == '?' || category == '?') {
+        if (category == '?') {
             this.emitWithState('Unhandled');
             return;
         }
@@ -285,7 +285,7 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
         }
 
         this.attributes.searchStarted = true;
-        if (!slots.budget) {
+        if (!slots.budget.value) {
             this.emitWithState('BudgetSearchIntent');
         } else {
             this.emitWithState('CustomSearchIntent');
