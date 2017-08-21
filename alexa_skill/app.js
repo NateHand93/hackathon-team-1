@@ -303,13 +303,13 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
         calculateRestaurantBudget((budget) => {
 
             if (budget == null) {
-                this.handler.state = STARTMODE;
+                this.handler.state = states.STARTMODE;
                 this.attributes.searchStarted = false;
                 this.emit(':ask', 'Looks like you haven\'t set your budget for restaurants yet. Please set up your monthly budget for restaurants.');
             }
 
             if (budget <= 0) {
-                this.handler.state = STARTMODE;
+                this.handler.state = states.STARTMODE;
                 this.attributes.searchStarted = false;
                 this.emit(':ask', 'Uh oh. You\'ve already spent your monthly budget for restuarants this month. Try modifying your budget.');
             }
@@ -317,7 +317,7 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
             let price = YelpClient.getPrice(budget, slots.people.value);
 
             if (price == null) {
-                this.handler.state = STARTMODE;
+                this.handler.state = states.STARTMODE;
                 this.attributes.searchStarted = false;
                 this.emit(':ask', 'Uh oh. Looks like you can\'t afford to go out to eat. Try increasing your budget.');                
             }
@@ -331,7 +331,7 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
             YelpClient.getRestaurantsByAdditionalParams(requiredParams, optionalParams, (restaurants) => {
 
                 if (!restaurants || !restaurants.length) {
-                    this.handler.state = STARTMODE;
+                    this.handler.state = states.STARTMODE;
                     this.attributes.searchStarted = false;
                     this.emit(':ask', 'Sorry, we couldn\'t find a restaurant within your budget. Try broadening your search.');
                 }
@@ -363,7 +363,7 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
         let price = YelpClient.getPrice(slots.budget.value, slots.people.value);
 
         if (price == null) {
-             this.handler.state = STARTMODE;
+             this.handler.state = states.STARTMODE;
             this.attributes.searchStarted = false;
             this.emit(':ask', 'Uh oh. Looks like you can\'t afford to go out to eat. Try increasing your budget.');
         }
@@ -379,7 +379,7 @@ var searchModeHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
         YelpClient.getRestaurantsByAdditionalParams(requiredParams, optionalParams, (restaurants) => {
 
             if (!restaurants || !restaurants.length) {
-                this.handler.state = STARTMODE;
+                this.handler.state = states.STARTMODE;
                 this.attributes.searchStarted = false;
                 this.emit(':ask', 'Sorry, we couldn\'t find a restaurant within your budget. Try broadening your search.');
             }
